@@ -15,7 +15,15 @@ requirements = [ ]
 
 setup_requirements = ['pytest-runner', ]
 
-test_requirements = ['pytest', ]
+test_requirements = [
+    'pytest',
+    'pytest-runner',
+    'stacker',
+
+]
+extras = {
+    'test': test_requirements,
+}
 
 setup(
     author="Brett Swift",
@@ -33,7 +41,7 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
-    description="Simplified dynamic cloudformation resources with an opinion",
+    description="Simplified Cloudformation architectural paterns, with an opinion",
     install_requires=requirements,
     license="MIT license",
     long_description=readme + '\n\n' + history,
@@ -44,6 +52,7 @@ setup(
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
+    extras_require=extras,
     url='https://github.com/brettswift/cumulus',
     version='0.1.0',
     zip_safe=False,
