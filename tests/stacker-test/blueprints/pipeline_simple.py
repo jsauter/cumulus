@@ -1,7 +1,6 @@
 from stacker.blueprints.base import Blueprint
 
-from troposphere.cloudformation import WaitConditionHandle
-from troposphere.s3 import Bucket
+from cumulus.steps import pipeline
 
 
 class PipelineSimple(Blueprint):
@@ -11,9 +10,14 @@ class PipelineSimple(Blueprint):
     """
 
     def create_template(self):
-       t = self.template
 
-       t.add_resource(Bucket(
-           "S3Bucket",
-           BucketName='bswift-int-test-asdf'
-       ))
+        t = self.template
+
+        deploy_pipeline = pipeline.Pipeline(template=t)
+        stage1 = pipeline.Stage(deploy_pipeline)
+        stage2 = pipeline.Stage(successor=stage1)
+        stage2.handle()
+
+        print("\n\nJust generated this template:")
+        print(self.template.__dict__)
+        raise ValueError("Don't want to complete yet")
