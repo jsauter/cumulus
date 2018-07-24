@@ -2,16 +2,14 @@
 
 namespace: ${namespace}
 
-stacker_bucket: stacker-int-test-bswift
+stacker_bucket: bswift-spike
 
-sys_path: ../../
+sys_path: .
 
 # The stacks key accepts a list of stack declarations.
 # http://stacker.readthedocs.io/en/latest/config.html#stacks
 stacks:
 #  - name: s3bucket-smoke-test
 #    class_path: blueprints.s3_bucket.S3Simple
-  - name: pipeline-simple
-    class_path: tests
-
-
+  - name: pipelinesimple
+    class_path: blueprints.pipeline_simple.PipelineSimple

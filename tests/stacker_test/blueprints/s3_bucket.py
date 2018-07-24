@@ -1,6 +1,5 @@
 from stacker.blueprints.base import Blueprint
 
-from troposphere.cloudformation import WaitConditionHandle
 from troposphere.s3 import Bucket
 
 
@@ -11,9 +10,9 @@ class S3Simple(Blueprint):
     """
 
     def create_template(self):
-       t = self.template
+        t = self.template
 
-       t.add_resource(Bucket(
+        t.add_resource(Bucket(
            "S3Bucket",
            BucketName='bswift-int-test-asdf'
-       ))
+        ))
