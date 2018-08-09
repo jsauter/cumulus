@@ -19,6 +19,8 @@
 #fswatch -e ".*" -i "\\.py$" -i "\\.yaml$"  -x -o .. | xargs -n1 ./tests/ci/unit.sh || echo "failed.  Please restart this script."
 
 #The above was deprecated for pytest-watch.
+# add this line to -afterrun to see diff output as well
+# printf "\nChanges:\n$(git diff --stat) \n "'
 
 if [[ `uname` == 'Darwin' ]]; then
     ptw -v \

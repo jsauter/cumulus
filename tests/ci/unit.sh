@@ -13,3 +13,4 @@ echo '-- flake8 started ---'
 flake8 cumulus tests
 export CI_FLAKE_RESULT=$?
 echo '-- flake8 finished --'
+

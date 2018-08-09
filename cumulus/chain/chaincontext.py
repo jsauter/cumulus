@@ -3,8 +3,11 @@ class ChainContext:
     def __init__(self,
                  template,
                  instance_name,
-                 vpc_id=None
                  ):
+        """
+
+        :type template: troposphere.Template
+        """
         self._instance_name = instance_name
         self._template = template
         self._metadata = {}
@@ -17,7 +20,7 @@ class ChainContext:
     def metadata(self):
         """
         Steps can write data here to be used later in the chain.
-        Example: Code pipeline initial step might create an s3 bucket
+        Example: Code development initial step might create an s3 bucket
                  Subsequent steps might want to reference this.
                  It could be a string, or even a troposphere Ref object.
         :return:
