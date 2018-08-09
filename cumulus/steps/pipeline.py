@@ -1,14 +1,25 @@
 import awacs
 import troposphere
-from awacs import aws, sts, s3, logs, ec2
+
+# from awacs import aws, sts, s3, logs, ec2, iam
+import awacs.iam
+import awacs.aws
+import awacs.sts
+import awacs.s3
+import awacs.logs
+import awacs.ec2
+import awacs.iam
+
 from cumulus.chain import step
 from cumulus.util.tropo import TemplateQuery
 
-from troposphere import codepipeline, Ref, codebuild, iam, ec2
+from troposphere import codepipeline, Ref, iam, codebuild, ec2
 from troposphere import logs as log_resource
 from troposphere.s3 import Bucket, VersioningConfiguration
 
 META_PIPELINE_BUCKET_REF = 'pipeline-bucket-Ref'
+META_PIPELINE_BUCKET_POLICY_REF = 'pipeline-bucket-policy-Ref'
+
 META_LAST_STAGE_OUTPUT = 'last_pipeline_stage'
 
 
@@ -32,7 +43,65 @@ class Pipeline(step.Step):
             )
         )
 
+        pipeline_bucket_access_policy = iam.ManagedPolicy(
+            "PipelineBucketAccessPolicy",
+            Path='/managed/',
+            PolicyDocument=awacs.aws.PolicyDocument(
+                Version="2012-10-17",
+                Id="bucket-access-policy%s" % chain_context.instance_name,
+                Statement=[
+                    awacs.aws.Statement(
+                        Effect=awacs.aws.Allow,
+                        Action=[
+                            awacs.s3.ListBucket,
+                            awacs.s3.GetBucketVersioning,
+                            # awacs.aws.Action("s3", "*"),
+                        ],
+                        Resource=[
+                            # awacs.s3.ARN(pipeline_bucket),
+                            troposphere.Join('', [
+                                awacs.s3.ARN(),
+                                Ref(pipeline_bucket),
+                            ]),
+                        ],
+                    ),
+                    awacs.aws.Statement(
+                        Effect=awacs.aws.Allow,
+                        Action=[
+                            awacs.s3.HeadBucket,
+                        ],
+                        Resource=[
+                            '*'
+                        ]
+                    ),
+                    awacs.aws.Statement(
+                        Effect=awacs.aws.Allow,
+                        Action=[
+                            awacs.s3.GetObject,
+                            awacs.s3.GetObjectVersion,
+                            awacs.s3.PutObject,
+                            awacs.s3.ListObjects,
+                            awacs.s3.ListBucketMultipartUploads,
+                            awacs.s3.AbortMultipartUpload,
+                            awacs.s3.ListMultipartUploadParts,
+                            awacs.aws.Action("s3", "Get*"),
+                        ],
+                        Resource=[
+                            troposphere.Join('', [
+                                awacs.s3.ARN(),
+                                Ref(pipeline_bucket),
+                                '/*'
+                            ]),
+                        ],
+                    )
+                ]
+            )
+        )
+
+        chain_context.template.add_resource(pipeline_bucket_access_policy)
+        # pipeline_bucket could be a string or Join object.. unit test this.
         chain_context.metadata[META_PIPELINE_BUCKET_REF] = Ref(pipeline_bucket)
+        chain_context.metadata[META_PIPELINE_BUCKET_POLICY_REF] = Ref(pipeline_bucket_access_policy)
 
         pipeline_policy = iam.Policy(
             PolicyName="%sPolicy" % self.name,
@@ -51,7 +120,7 @@ class Pipeline(step.Step):
                         ],
                     ),
                     awacs.aws.Statement(
-                        Effect=aws.Allow,
+                        Effect=awacs.aws.Allow,
                         Action=[
                             awacs.aws.Action("cloudformation", "*"),
                             awacs.aws.Action("codebuild", "*"),
@@ -67,12 +136,12 @@ class Pipeline(step.Step):
             "PipelineServiceRole",
             Path="/",
             RoleName="PipelineRole%s" % chain_context.instance_name,
-            AssumeRolePolicyDocument=aws.Policy(
+            AssumeRolePolicyDocument=awacs.aws.Policy(
                 Statement=[
-                    aws.Statement(
-                        Effect=aws.Allow,
-                        Action=[sts.AssumeRole],
-                        Principal=aws.Principal(
+                    awacs.aws.Statement(
+                        Effect=awacs.aws.Allow,
+                        Action=[awacs.sts.AssumeRole],
+                        Principal=awacs.aws.Principal(
                             'Service',
                             "codepipeline.amazonaws.com"
                         )
@@ -102,7 +171,7 @@ class Pipeline(step.Step):
                     Configuration={
                         # TODO: inject the s3 things
                         "S3Bucket": Ref(pipeline_bucket),
-                        "S3ObjectKey": "pipeline-spike/iteration-1.tar.gz"
+                        "S3ObjectKey": "iteration-1.tar.gz"
                     },
                     RunOrder="1"
                 )
@@ -169,62 +238,68 @@ class CodeBuildStage(step.Step):
 
         # TODO: put code build stuff into some kind of component?
         codebuild_policy = iam.Policy(
-            PolicyName='S3ReadArtifactBucket',
+            PolicyName="CodeBuildPolicy%s" % chain_context.instance_name,
             PolicyDocument=awacs.aws.PolicyDocument(
                 Version="2012-10-17",
                 Id="CodeBuildPolicyForPipeline",
                 Statement=[
-                    aws.Statement(
-                        Effect=aws.Allow,
+                    awacs.aws.Statement(
+                        Effect=awacs.aws.Allow,
+                        # TODO: candidate for a component, re-use in cloudformation policies
                         Action=[
                             awacs.aws.Action("cloudformation", "*"),
+                            awacs.aws.Action("ec2", "*"),
+                            awacs.aws.Action("route53", "*"),
+                            awacs.aws.Action("iam", "*"),
+                            awacs.aws.Action("elasticloadbalancing", "*"),
+                            awacs.aws.Action("s3", "*"),
+                            awacs.aws.Action("autoscaling", "*"),
+                            awacs.aws.Action("apigateway", "*"),
+                            awacs.aws.Action("cloudwatch", "*"),
+                            awacs.aws.Action("cloudfront", "*"),
+                            awacs.aws.Action("rds", "*"),
+                            awacs.aws.Action("dynamodb", "*"),
+                            awacs.aws.Action("lambda", "*"),
+                            awacs.aws.Action("sqs", "*"),
+                            awacs.aws.Action("events", "*"),
+                            awacs.iam.PassRole,
                         ],
                         # TODO: restrict more accurately
                         Resource=["*"]
                     ),
-                    aws.Statement(
-                        Effect=aws.Allow,
+                    awacs.aws.Statement(
+                        Effect=awacs.aws.Allow,
                         Action=[
-                            logs.CreateLogGroup,
-                            logs.CreateLogStream,
-                            logs.PutLogEvents,
+                            awacs.logs.CreateLogGroup,
+                            awacs.logs.CreateLogStream,
+                            awacs.logs.PutLogEvents,
                         ],
                         # TODO: restrict more accurately
                         Resource=["*"]
                     ),
-                    aws.Statement(
-                        Effect=aws.Allow,
+                    awacs.aws.Statement(
+                        Effect=awacs.aws.Allow,
                         Action=[
-                            s3.GetObject,
-                            s3.GetObjectVersion,
-                            s3.ListObjects,
+                            awacs.s3.HeadBucket,
+                        ],
+                        Resource=[
+                            '*'
+                        ]
+                    ),
+                    # ec2:DescribeKeyPairs
+                    awacs.aws.Statement(
+                        Effect=awacs.aws.Allow,
+                        Action=[
+                            awacs.aws.Action('ec2', 'Describe*'),
                         ],
                         # TODO: restrict more accurately.  What does codebuild need?
                         Resource=[
                             "*"
-                            # troposphere.Join('', [
-                            #     awacs.s3.ARN(),
-                            #     chain_context.metadata[META_PIPELINE_BUCKET_REF],
-                            #     "/*"
-                            # ])
                         ]
                     ),
-                    aws.Statement(
-                        Effect=aws.Allow,
-                        Action=[
-                            aws.Action("s3", "*"),
-                        ],
-                        Resource=[
-                            # s3.ARN("bswift-spike")
-                            troposphere.Join('', [
-                                awacs.s3.ARN(),
-                                chain_context.metadata[META_PIPELINE_BUCKET_REF],
-                                "/*"
-                            ])
-                        ]
-                    ),
-                    aws.Statement(
-                        Effect=aws.Allow,
+                    # used for codebuild in a vpc
+                    awacs.aws.Statement(
+                        Effect=awacs.aws.Allow,
                         Action=[
                             awacs.ec2.DescribeSecurityGroups,
                             awacs.ec2.DescribeSubnets,
@@ -244,12 +319,12 @@ class CodeBuildStage(step.Step):
         codebuild_role = iam.Role(
             "CodeBuildServiceRole",
             Path="/",
-            AssumeRolePolicyDocument=aws.Policy(
+            AssumeRolePolicyDocument=awacs.aws.Policy(
                 Statement=[
-                    aws.Statement(
-                        Effect=aws.Allow,
-                        Action=[sts.AssumeRole],
-                        Principal=aws.Principal(
+                    awacs.aws.Statement(
+                        Effect=awacs.aws.Allow,
+                        Action=[awacs.sts.AssumeRole],
+                        Principal=awacs.aws.Principal(
                             'Service',
                             "codebuild.amazonaws.com"
                         )
@@ -257,6 +332,9 @@ class CodeBuildStage(step.Step):
             ),
             Policies=[
                 codebuild_policy
+            ],
+            ManagedPolicyArns=[
+                chain_context.metadata[META_PIPELINE_BUCKET_POLICY_REF]
             ]
         )
 
@@ -265,14 +343,14 @@ class CodeBuildStage(step.Step):
             Image='aws/codebuild/python:2.7.12',
             Type='LINUX_CONTAINER',
             EnvironmentVariables=[
-                {'Name': 'TEST_VAR', 'Value': 'demo'}
+                {'Name': 'PIPELINE_BUCKET', 'Value': chain_context.metadata[META_PIPELINE_BUCKET_REF]}
             ],
         )
 
         project = self.create_project(
             chain_context=chain_context,
             codebuild_role=codebuild_role,
-            environment=environment
+            codebuild_environment=environment
         )
 
         code_build_stage = codepipeline.Stages(
@@ -310,7 +388,7 @@ class CodeBuildStage(step.Step):
 
         stages.append(code_build_stage)
 
-    def create_project(self, chain_context, codebuild_role, environment):
+    def create_project(self, chain_context, codebuild_role, codebuild_environment):
 
         artifacts = codebuild.Artifacts(Type='CODEPIPELINE')
 
@@ -318,7 +396,7 @@ class CodeBuildStage(step.Step):
 
         # Configure vpc if available
         if self.vpc_config:
-            sg = troposphere.ec2.SecurityGroup(
+            sg = ec2.SecurityGroup(
                 "CodebBuild%sSG" % chain_context.instance_name,
                 GroupDescription="Gives codebuild access to VPC",
                 VpcId=self.vpc_config.vpc_id,
@@ -342,8 +420,9 @@ class CodeBuildStage(step.Step):
             "project%s" % chain_context.instance_name,
             DependsOn=codebuild_role.title,
             Artifacts=artifacts,
-            Environment=environment,
-            Name="DeployStacker",
+            BadgeEnabled=True,
+            Environment=codebuild_environment,
+            Name="pipeline-%s" % chain_context.instance_name,
             ServiceRole=troposphere.GetAtt(codebuild_role, 'Arn'),
             Source=codebuild.Source(
                 "Deploy",

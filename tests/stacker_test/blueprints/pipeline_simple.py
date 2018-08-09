@@ -4,9 +4,8 @@ from stacker.blueprints.base import Blueprint
 
 
 class PipelineSimple(Blueprint):
-    """Touch creates a wait condition handle and nothing else.
-
-    For learning / functional testing.
+    """
+    An example pipeline that doesn't do anything interesting.
     """
 
     def create_template(self):
@@ -28,17 +27,9 @@ class PipelineSimple(Blueprint):
 
         the_chain.add(pipeline.CodeBuildStage())  # This should hopefully be more valuable, context maybe!
 
-        # t.add_resource(source_bucket)
-
         chain_context = chaincontext.ChainContext(
             template=t,
             instance_name=self.name
         )
 
         the_chain.run(chain_context)
-
-        # print("\n\nJust generated this template:")
-        # print(t.resources)
-        # print()
-        # print(t.resources['PipelineServiceRole'].__dict__)
-        # print(t.to_yaml())

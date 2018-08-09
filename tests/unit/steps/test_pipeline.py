@@ -80,7 +80,7 @@ class TestPipelineStep(unittest.TestCase):
         project = codebuild.create_project(
             chain_context=self.context,
             codebuild_role='dummy-role',
-            environment=self.environment
+            codebuild_environment=self.environment
         )
 
         self.assertNotIn('VpcConfig', project.to_dict())
@@ -99,7 +99,7 @@ class TestPipelineStep(unittest.TestCase):
         project = codebuild.create_project(
             chain_context=self.context,
             codebuild_role='dummy-role',
-            environment=self.environment
+            codebuild_environment=self.environment
         )
 
         self.assertIn('VpcConfig', project.properties)
