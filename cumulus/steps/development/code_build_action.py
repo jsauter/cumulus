@@ -8,12 +8,14 @@ import awacs.iam
 import awacs.ec2
 import awacs.sts
 
+import cumulus.policies
+import cumulus.policies.codebuild
 
 from troposphere import iam,\
     codebuild, codepipeline, Ref, ec2
 
 from cumulus.chain import step
-import cumulus.policies
+
 from cumulus.steps.development import META_PIPELINE_BUCKET_POLICY_REF, \
     META_PIPELINE_BUCKET_REF
 from cumulus.util.tropo import TemplateQuery
@@ -21,80 +23,29 @@ from cumulus.util.tropo import TemplateQuery
 
 class CodeBuildAction(step.Step):
 
-    def __init__(self, action_name, input_artifact_name, vpc_config=None):
+    def __init__(self,
+                 action_name,
+                 input_artifact_name,
+                 environment=None,
+                 vpc_config=None):
         """
-        :type vpc_config.Vpc_Config: required if the codebuild step requires access to the VPC
+        :type input_artifact_name: basestring The artifact name in the pipeline. Must contain a buildspec.yml
+        :type action_name: basestring Displayed on the console
+        :type environment: troposphere.codebuild.Environment Optional if you need ENV vars or a different build.
+        :type vpc_config.Vpc_Config: Only required if the codebuild step requires access to the VPC
         """
         step.Step.__init__(self)
+        self.environment = environment
         self.input_artifact_name = input_artifact_name
         self.action_name = action_name
         self.vpc_config = vpc_config
 
     def handle(self, chain_context):
 
-        # previous_stage_output = chain_context.metadata[META_LAST_STAGE_OUTPUT]
-        print("handling........the.......%s.....stage" % self.action_name)
-        codebuild_policy = iam.Policy(
-            PolicyName="CodeBuildPolicy%s" % chain_context.instance_name,
-            PolicyDocument=awacs.aws.PolicyDocument(
-                Version="2012-10-17",
-                Id="CodeBuildPolicyForPipeline",
-                Statement=[
-                    awacs.aws.Statement(
-                        Effect=awacs.aws.Allow,
-                        Action=[
-                            awacs.aws.Action("cloudformation", "*"),
-                            awacs.aws.Action("ec2", "*"),
-                            awacs.aws.Action("route53", "*"),
-                            awacs.aws.Action("iam", "*"),
-                            awacs.aws.Action("elasticloadbalancing", "*"),
-                            awacs.aws.Action("s3", "*"),
-                            awacs.aws.Action("autoscaling", "*"),
-                            awacs.aws.Action("apigateway", "*"),
-                            awacs.aws.Action("cloudwatch", "*"),
-                            awacs.aws.Action("cloudfront", "*"),
-                            awacs.aws.Action("rds", "*"),
-                            awacs.aws.Action("dynamodb", "*"),
-                            awacs.aws.Action("lambda", "*"),
-                            awacs.aws.Action("sqs", "*"),
-                            awacs.aws.Action("events", "*"),
-                            awacs.iam.PassRole,
-                        ],
-                        Resource=["*"]
-                    ),
-                    awacs.aws.Statement(
-                        Effect=awacs.aws.Allow,
-                        Action=[
-                            awacs.logs.CreateLogGroup,
-                            awacs.logs.CreateLogStream,
-                            awacs.logs.PutLogEvents,
-                        ],
-                        # TODO: restrict more accurately
-                        Resource=["*"]
-                    ),
-                    awacs.aws.Statement(
-                        Effect=awacs.aws.Allow,
-                        Action=[
-                            awacs.s3.HeadBucket,
-                        ],
-                        Resource=[
-                            '*'
-                        ]
-                    ),
-                    awacs.aws.Statement(
-                        Effect=awacs.aws.Allow,
-                        Action=[
-                            awacs.aws.Action('ec2', 'Describe*'),
-                        ],
-                        # TODO: restrict more accurately.  What does codebuild need?
-                        Resource=[
-                            "*"
-                        ]
-                    ),
-                    cumulus.policies.POLICY_VPC_CONFIG
-                ]
-            )
-        )
+        print("Adding action %s." % self.action_name)
+
+        policy_name = "CodeBuildPolicy%s" % chain_context.instance_name
+        codebuild_policy = cumulus.policies.codebuild.get_policy_code_build_general_access(policy_name)
 
         codebuild_role = iam.Role(
             "CodeBuildServiceRole",
@@ -118,21 +69,22 @@ class CodeBuildAction(step.Step):
             ]
         )
 
-        # TODO: make injectable
-        environment = codebuild.Environment(
-            ComputeType='BUILD_GENERAL1_SMALL',
-            Image='aws/codebuild/python:2.7.12',
-            Type='LINUX_CONTAINER',
-            EnvironmentVariables=[
-                # TODO: allow these to be injectable.
-                {'Name': 'PIPELINE_BUCKET', 'Value': chain_context.metadata[META_PIPELINE_BUCKET_REF]}
-            ],
-        )
+        if not self.environment:
+            self.environment = codebuild.Environment(
+                ComputeType='BUILD_GENERAL1_SMALL',
+                Image='aws/codebuild/python:2.7.12',
+                Type='LINUX_CONTAINER',
+                EnvironmentVariables=[
+                    # TODO: allow these to be injectable.
+                    {'Name': 'PIPELINE_BUCKET', 'Value': chain_context.metadata[META_PIPELINE_BUCKET_REF]}
+                ],
+            )
 
         project = self.create_project(
             chain_context=chain_context,
             codebuild_role=codebuild_role,
-            codebuild_environment=environment
+            codebuild_environment=self.environment,
+            name=self.action_name,
         )
 
         code_build_action = codepipeline.Actions(
@@ -150,28 +102,28 @@ class CodeBuildAction(step.Step):
             RunOrder="1"
         )
 
-        # TODO fetch stage, and add the action above to it.
-        # code_build_stage = codepipeline.Stages(
-        #     Name=self.stage_name,
-        #     Actions=[
-        #         # These will have to be filled out by a subsequent action step.
-        #     ]
-        # )
-
         chain_context.template.add_resource(codebuild_role)
         chain_context.template.add_resource(project)
 
-        found_pipeline = TemplateQuery.get_resource_by_type(
+        found_pipelines = TemplateQuery.get_resource_by_type(
             template=chain_context.template,
-            type_to_find=codepipeline.Pipeline)[0]
-        stages = found_pipeline.properties['Stages']  # type: list
+            type_to_find=codepipeline.Pipeline)
+        pipeline = found_pipelines[0]
 
-        print(stages.count(stages))
-        stages['Actions'].append(code_build_action)
+        # Alternate way to get this
+        # pipeline = TemplateQuery.get_resource_by_title(chain_context.template, 'AppPipeline')
 
-        raise ValueError("got stages")
+        stages = pipeline.Stages  # type: list
 
-    def create_project(self, chain_context, codebuild_role, codebuild_environment):
+        # TODO: find stage by name
+        first_stage = stages[0]
+
+        # TODO accept a parallel action to the previous action, and don't +1 here.
+        next_run_order = len(first_stage.Actions) + 1
+        code_build_action.RunOrder = next_run_order
+        first_stage.Actions.append(code_build_action)
+
+    def create_project(self, chain_context, codebuild_role, codebuild_environment, name):
 
         artifacts = codebuild.Artifacts(Type='CODEPIPELINE')
 
@@ -199,12 +151,13 @@ class CodeBuildAction(step.Step):
                     SecurityGroupIds=[Ref(sg)],
                 )}
 
+        project_name = "project%s" % name
         project = codebuild.Project(
-            "project%s" % chain_context.instance_name,
+            project_name,
             DependsOn=codebuild_role,
             Artifacts=artifacts,
             Environment=codebuild_environment,
-            Name="project-%s" % chain_context.instance_name,
+            Name=project_name,
             ServiceRole=troposphere.GetAtt(codebuild_role, 'Arn'),
             Source=codebuild.Source(
                 "Deploy",
@@ -214,6 +167,7 @@ class CodeBuildAction(step.Step):
         )
 
         return project
+
 
 #
 # source_stage = codepipeline.Stages(

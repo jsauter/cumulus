@@ -84,7 +84,8 @@ class TestPipelineStep(unittest.TestCase):
         project = action.create_project(
             chain_context=self.context,
             codebuild_role='dummy-role',
-            codebuild_environment=self.environment
+            codebuild_environment=self.environment,
+            name='test',
         )
 
         self.assertNotIn('VpcConfig', project.to_dict())
@@ -105,7 +106,8 @@ class TestPipelineStep(unittest.TestCase):
         project = action.create_project(
             chain_context=self.context,
             codebuild_role='dummy-role',
-            codebuild_environment=self.environment
+            codebuild_environment=self.environment,
+            name='test',
         )
 
         self.assertIn('VpcConfig', project.properties)
