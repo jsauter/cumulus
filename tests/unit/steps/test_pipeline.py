@@ -7,15 +7,13 @@
 
 import unittest
 
-import cumulus
-import cumulus.steps.development
-from cumulus.chain import step, chaincontext
-from cumulus.steps.development import pipeline, code_build_action
 import troposphere
+from troposphere import codepipeline, codebuild
 
+from cumulus.chain import chaincontext
+from cumulus.steps.development import pipeline, code_build_action
 from cumulus.steps.development.vpc_config import VpcConfig
 from cumulus.util.tropo import TemplateQuery
-from troposphere import codepipeline, codebuild
 
 
 class TestPipelineStep(unittest.TestCase):
