@@ -1,34 +1,20 @@
-# Config file for automatic testing at travis-ci.org
-
 language: python
 python:
-  - 3.6
-  - 2.7
-
-# Command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
+- 3.6
+- 2.7
 install:
-  - pip install -e .
-  - pip install .[test]
-
-# Command to run tests, e.g. python setup.py test
+- pip install -e .
+- pip install .[test]
 script:
-#  - pip install -e .
-#  - pip install .[test]
-  - py.test -s tests/unit --color=yes -v
-
+- py.test -s tests/unit --color=yes -v
 after_success:
-  - coveralls
-
-# Assuming you have installed the travis-ci CLI tool, after you
-# create the Github repo and add it to Travis, run the
-# following command to finish PyPI deployment setup:
-# $ travis encrypt --add deploy.password
+- coveralls
 deploy:
   provider: pypi
   distributions: sdist bdist_wheel
   user: brettswift
   password:
-    secure: PLEASE_REPLACE_ME
+    secure: h6Gp1eBNqp2BovEPxCk/NSzi8fWzz3W0YZ8PSSRRQzwwSnK2ypL7quamtOTvDXdajd+mDhoss7h+npmzzwlgAn7F3wIMqfqg+rwg0rkiwbsUVCWLgysXLIt/BdIwK+Nr11+znP9W6lpPI4wRWW3OKze+gcfERfptqCgQOccskGBgK3hnKl9xsl7vU/SSx048mW89Qc1y9qziIxwHQH4XOrIUQ58fCF72Keiw7H3UrM97unabLcWny8qFLEv+aYjXtzBoMJtBc6M4bd33XFGnXX3cT1dBd5/xTiyAJ2uahhF52bsJxAvRfRRMBMiOM9u/GxTlCjwz1fG6XxPPX3ZGqC1EjQR6Ocp5ETkhuro3ELguNvmRaKL9weQlFf4tRkohNghtLA02Rmx8vrDMyeHF+u7Bv9CoIxhTIErvbLjm3ThNPOSJrcuG6BAhSV5LhteyC2yUsQ43tVk/I2bntlPsW3bXG20rGHHuCFGo1PmvSSrix3tare7ElHAntvztVSKIn/Ml/kkFmq/c2IKF3gnp+E41T/j/ptntYZ78Y+31KqJT+o5F00YaszL4WSkv3BpNEob9wEtkJLITrYMPHrGK7DDTNlR9qlv1GB9tYVAFWedX0W+zvHVFOQRtgG9mKzBwf9ZQkFDtQTn9wpvNIvzMKDN/bMAi/ldvqSA0I1jxSPM=
   on:
     tags: true
     repo: brettswift/cumulus
