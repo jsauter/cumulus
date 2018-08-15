@@ -24,7 +24,9 @@ test_requirements = [
     'pytest-runner',
     'stacker',
     'flake8',
-    'pytest-watch'
+    'pytest-watch',
+    'pytest-cov',
+    'coveralls'
 ]
 
 extras = {

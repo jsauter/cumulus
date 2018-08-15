@@ -49,15 +49,15 @@ class TestPipelineStep(unittest.TestCase):
         ))
 
         self.assertRaises(
-            excClass=ValueError,
-            callableObj=TemplateQuery.get_resource_by_title,
+            ValueError,
+            TemplateQuery.get_resource_by_title,
             template=t,
             title="TestingTheNameLookups",
         )
 
         self.assertRaisesRegexp(
-            expected_exception=ValueError,
-            expected_regexp="Expected to find.+TestingTheNameLookup",
+            ValueError,
+            "Expected to find.+TestingTheNameLookup",
             callable_obj=TemplateQuery.get_resource_by_title,
             template=t,
             title="TestingTheNameLookups",
@@ -87,15 +87,15 @@ class TestPipelineStep(unittest.TestCase):
         ))
 
         self.assertRaises(
-            excClass=ValueError,
-            callableObj=TemplateQuery.get_resource_by_type,
+            ValueError,
+            TemplateQuery.get_resource_by_type,
             template=t,
             type_to_find=troposphere.s3.Policy
         )
 
         self.assertRaisesRegexp(
-            expected_exception=ValueError,
-            expected_regexp="Expected to find.+of type.+Policy",
+            ValueError,
+            "Expected to find.+of type.+Policy",
             callable_obj=TemplateQuery.get_resource_by_type,
             template=t,
             type_to_find=troposphere.s3.Policy

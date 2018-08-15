@@ -6,13 +6,18 @@ python:
   - 2.7
 
 # Command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
-install: pip install -U tox-travis
+install:
+  - pip install -e .
+  - pip install .[test]
 
 # Command to run tests, e.g. python setup.py test
 script:
-  - pip install -e .
-  - pip install .[test]
+#  - pip install -e .
+#  - pip install .[test]
   - py.test -s tests/unit --color=yes -v
+
+after_success:
+  - coveralls
 
 # Assuming you have installed the travis-ci CLI tool, after you
 # create the Github repo and add it to Travis, run the
