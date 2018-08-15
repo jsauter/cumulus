@@ -53,7 +53,7 @@ setup(
     long_description=readme + '\n\n' + history,
     include_package_data=True,
     keywords='cumulus',
-    name='cumulus',
+    name='cfn_cumulus',
     packages=find_packages(include=['cumulus']),
     setup_requires=setup_requirements,
     test_suite='tests',
