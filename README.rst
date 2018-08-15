@@ -3,14 +3,14 @@ Cumulus
 =======
 
 
-.. image:: https://img.shields.io/pypi/v/cumulus.svg
-        :target: https://pypi.python.org/pypi/cumulus
+.. image:: https://img.shields.io/pypi/v/cfn_cumulus.svg
+        :target: https://pypi.python.org/pypi/cfn_cumulus
 
-.. image:: https://img.shields.io/travis/brettswift/cumulus.svg
-        :target: https://travis-ci.org/brettswift/cumulus
+.. image:: https://img.shields.io/travis/brettswift/cfn_cumulus.svg
+        :target: https://travis-ci.org/brettswift/cfn_cumulus
 
-.. image:: https://readthedocs.org/projects/cumulus/badge/?version=latest
-        :target: https://cumulus.readthedocs.io/en/latest/?badge=latest
+.. image:: https://readthedocs.org/projects/cfn_cumulus/badge/?version=latest
+        :target: https://cfn_cumulus.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
 
@@ -20,7 +20,7 @@ Simplified dynamic cloudformation resources with an opinion
 
 
 * Free software: MIT license
-* Documentation: https://cumulus.readthedocs.io.
+* Documentation: https://cfn_cumulus.readthedocs.io.
 
 
 Features

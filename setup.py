@@ -11,7 +11,11 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = [ ]
+requirements = [
+    'troposphere',
+    'awacs',
+    'termcolor',
+]
 
 setup_requirements = ['pytest-runner', ]
 
@@ -19,8 +23,12 @@ test_requirements = [
     'pytest',
     'pytest-runner',
     'stacker',
-
+    'flake8',
+    'pytest-watch',
+    'pytest-cov',
+    'coveralls'
 ]
+
 extras = {
     'test': test_requirements,
 }
@@ -36,8 +44,6 @@ setup(
         "Programming Language :: Python :: 2",
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
@@ -47,7 +53,7 @@ setup(
     long_description=readme + '\n\n' + history,
     include_package_data=True,
     keywords='cumulus',
-    name='cumulus',
+    name='cfn_cumulus',
     packages=find_packages(include=['cumulus']),
     setup_requires=setup_requirements,
     test_suite='tests',

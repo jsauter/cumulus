@@ -28,7 +28,7 @@ class Handler:
             raise ValueError("successor or the template was not set.")
 
     @abc.abstractmethod
-    def handle(self, template):
+    def handle(self):
         """
         Must override this.
         To continue the chain, call self._successor.next()
