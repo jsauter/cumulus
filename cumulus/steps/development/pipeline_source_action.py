@@ -88,7 +88,7 @@ class PipelineSourceAction(step.Step):
         pipeline = found_pipelines[0]
 
         # Alternate way to get this
-        # pipeline = TemplateQuery.get_resource_by_title(chain_context.template, 'AppPipeline')
+        # dummy = TemplateQuery.get_resource_by_title(chain_context.template, 'AppPipeline')
 
         stages = pipeline.Stages  # type: list
 

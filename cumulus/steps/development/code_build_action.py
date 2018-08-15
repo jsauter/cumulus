@@ -10,6 +10,8 @@ import awacs.sts
 
 import cumulus.policies
 import cumulus.policies.codebuild
+import cumulus.types.codebuild.buildaction
+import cumulus.util.tropo
 
 from troposphere import iam,\
     codebuild, codepipeline, Ref, ec2
@@ -18,7 +20,6 @@ from cumulus.chain import step
 
 from cumulus.steps.development import META_PIPELINE_BUCKET_POLICY_REF, \
     META_PIPELINE_BUCKET_REF
-from cumulus.util.tropo import TemplateQuery
 
 
 class CodeBuildAction(step.Step):
@@ -47,9 +48,8 @@ class CodeBuildAction(step.Step):
         print("Adding action %stage." % self.action_name)
 
         policy_name = "CodeBuildPolicy%stage" % chain_context.instance_name
-        codebuild_policy = cumulus.policies.codebuild.get_policy_code_build_general_access(policy_name)
-
         role_name = "CodeBuildRole%stage" % self.action_name
+
         codebuild_role = iam.Role(
             role_name,
             Path="/",
@@ -65,7 +65,7 @@ class CodeBuildAction(step.Step):
                     )]
             ),
             Policies=[
-                codebuild_policy
+                cumulus.policies.codebuild.get_policy_code_build_general_access(policy_name)
             ],
             ManagedPolicyArns=[
                 chain_context.metadata[META_PIPELINE_BUCKET_POLICY_REF]
@@ -78,7 +78,7 @@ class CodeBuildAction(step.Step):
                 Image='aws/codebuild/python:2.7.12',
                 Type='LINUX_CONTAINER',
                 EnvironmentVariables=[
-                    # TODO: allow these to be injectable.
+                    # TODO: allow these to be injectable, or just the whole environment?
                     {'Name': 'PIPELINE_BUCKET', 'Value': chain_context.metadata[META_PIPELINE_BUCKET_REF]}
                 ],
             )
@@ -90,17 +90,11 @@ class CodeBuildAction(step.Step):
             name=self.action_name,
         )
 
-        code_build_action = codepipeline.Actions(
+        code_build_action = cumulus.types.codebuild.buildaction.CodeBuildAction(
             Name=self.action_name,
             InputArtifacts=[
                 codepipeline.InputArtifacts(Name=self.input_artifact_name)
             ],
-            ActionTypeId=codepipeline.ActionTypeId(
-                Category="Build",
-                Owner="AWS",
-                Version="1",
-                Provider="CodeBuild"
-            ),
             Configuration={'ProjectName': Ref(project)},
             RunOrder="1"
         )
@@ -108,23 +102,13 @@ class CodeBuildAction(step.Step):
         chain_context.template.add_resource(codebuild_role)
         chain_context.template.add_resource(project)
 
-        found_pipelines = TemplateQuery.get_resource_by_type(
-            template=chain_context.template,
-            type_to_find=codepipeline.Pipeline)
-        pipeline = found_pipelines[0]
+        template = chain_context.template
+        stage_to_add = self.stage_name_to_add
 
-        # Alternate way to get this
-        # pipeline = TemplateQuery.get_resource_by_title(chain_context.template, 'AppPipeline')
-
-        stages = pipeline.Stages  # type: list
-
-        stage = None
-        for s in stages:
-            if s.Name == self.stage_name_to_add:
-                stage = s
-
-        if not stage:
-            raise ValueError("Expected to find stage named: %s but didn't." % self.stage_name_to_add)
+        stage = cumulus.util.tropo.TemplateQuery.get_pipeline_stage_by_name(
+            template=template,
+            stage_name=stage_to_add,
+        )
 
         # TODO accept a parallel action to the previous action, and don't +1 here.
         next_run_order = len(stage.Actions) + 1
