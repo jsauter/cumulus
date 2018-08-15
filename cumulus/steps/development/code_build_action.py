@@ -26,6 +26,7 @@ class CodeBuildAction(step.Step):
     def __init__(self,
                  action_name,
                  input_artifact_name,
+                 stage_name_to_add,
                  environment=None,
                  vpc_config=None):
         """
@@ -39,16 +40,18 @@ class CodeBuildAction(step.Step):
         self.input_artifact_name = input_artifact_name
         self.action_name = action_name
         self.vpc_config = vpc_config
+        self.stage_name_to_add = stage_name_to_add
 
     def handle(self, chain_context):
 
-        print("Adding action %s." % self.action_name)
+        print("Adding action %stage." % self.action_name)
 
-        policy_name = "CodeBuildPolicy%s" % chain_context.instance_name
+        policy_name = "CodeBuildPolicy%stage" % chain_context.instance_name
         codebuild_policy = cumulus.policies.codebuild.get_policy_code_build_general_access(policy_name)
 
+        role_name = "CodeBuildRole%stage" % self.action_name
         codebuild_role = iam.Role(
-            "CodeBuildServiceRole",
+            role_name,
             Path="/",
             AssumeRolePolicyDocument=awacs.aws.Policy(
                 Statement=[
@@ -115,13 +118,18 @@ class CodeBuildAction(step.Step):
 
         stages = pipeline.Stages  # type: list
 
-        # TODO: find stage by name
-        first_stage = stages[0]
+        stage = None
+        for s in stages:
+            if s.Name == self.stage_name_to_add:
+                stage = s
+
+        if not stage:
+            raise ValueError("Expected to find stage named: %s but didn't." % self.stage_name_to_add)
 
         # TODO accept a parallel action to the previous action, and don't +1 here.
-        next_run_order = len(first_stage.Actions) + 1
+        next_run_order = len(stage.Actions) + 1
         code_build_action.RunOrder = next_run_order
-        first_stage.Actions.append(code_build_action)
+        stage.Actions.append(code_build_action)
 
     def create_project(self, chain_context, codebuild_role, codebuild_environment, name):
 

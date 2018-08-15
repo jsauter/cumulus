@@ -15,12 +15,12 @@ import cumulus.steps.development
 from troposphere import codepipeline, Ref, iam
 from troposphere.s3 import Bucket, VersioningConfiguration
 
-SOURCE_STAGE_OUTPUT_NAME = 'SourceStageOutput'
+# SOURCE_STAGE_OUTPUT_NAME = 'SourceStageOutput'
 
 
 class Pipeline(step.Step):
 
-    def __init__(self, name, bucket_name, artifact_path):
+    def __init__(self, name, bucket_name):
         """
 
         :type bucket_name: the name of the bucket that will be created suffixed with the chaincontext instance name
@@ -28,7 +28,6 @@ class Pipeline(step.Step):
         step.Step.__init__(self)
         self.name = name
         self.bucket_name = bucket_name
-        self.artifact_path = artifact_path
 
     def handle(self, chain_context):
         """
@@ -39,7 +38,7 @@ class Pipeline(step.Step):
         :param chain_context:
         :return:
         """
-        # TODO: let this be injected.
+        # TODO: let (force?) bucket to be injected.
         pipeline_bucket = Bucket(
             "pipelinebucket%s" % chain_context.instance_name,
             BucketName=self.bucket_name,
@@ -181,4 +180,4 @@ class Pipeline(step.Step):
         chain_context.template.add_resource(pipeline_service_role)
         chain_context.template.add_resource(generic_pipeline)
 
-        chain_context.metadata[cumulus.steps.development.META_LAST_STAGE_OUTPUT] = SOURCE_STAGE_OUTPUT_NAME
+        # chain_context.metadata[cumulus.steps.development.META_LAST_STAGE_OUTPUT] = SOURCE_STAGE_OUTPUT_NAME

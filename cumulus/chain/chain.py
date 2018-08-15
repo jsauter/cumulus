@@ -1,4 +1,4 @@
-import chaincontext # noqa
+import chaincontext  # noqa
 from termcolor import colored
 
 
@@ -20,5 +20,5 @@ class Chain:
         :type chain_context: chaincontext.ChainContext
         """
         for step in self._steps:
-            print(colored("Running step for class %s " % step.__class__, color='yellow'))
+            print(colored("RUNNING STEP for class %s " % step.__class__, color='yellow'))
             step.handle(chain_context)
