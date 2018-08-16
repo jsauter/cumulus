@@ -27,7 +27,8 @@ class PipelineSourceAction(step.Step):
         """
         :type s3_object_key: basestring Path of the artifact in the bucket.
         :type s3_bucket_name: basestring or troposphere.Ref Object of the bucket name.
-        :type input_artifact_name: basestring The artifact name in the pipeline. (contains buildspec.yml. You can override that name in a codebuild action)
+        :type input_artifact_name: basestring The artifact name in the pipeline.
+              (should contain buildspec.yml. You can override that name in a codebuild action)
         :type action_name: basestring Displayed on the console
         :type environment: troposphere.codebuild.Environment Optional if you need ENV vars or a different build.
         :type vpc_config.Vpc_Config: Only required if the codebuild step requires access to the VPC

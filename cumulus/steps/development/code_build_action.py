@@ -127,7 +127,7 @@ class CodeBuildAction(step.Step):
         # Configure vpc if available
         if self.vpc_config:
             sg = ec2.SecurityGroup(
-                "CodebBuild%s%sSG" % (self.stage_name_to_add ,self.action_name),
+                "CodebBuild%s%sSG" % (self.stage_name_to_add, self.action_name),
                 GroupDescription="Gives codebuild access to VPC",
                 VpcId=self.vpc_config.vpc_id,
                 SecurityGroupEgress=[
