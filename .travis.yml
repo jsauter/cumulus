@@ -7,8 +7,8 @@ install:
 - pip install .[test]
 script:
 - py.test -s tests/unit --color=yes -v
-after_success:
-- coveralls
+#after_success:
+#- coveralls
 deploy:
   provider: pypi
   distributions: sdist bdist_wheel
