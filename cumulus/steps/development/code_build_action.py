@@ -29,14 +29,17 @@ class CodeBuildAction(step.Step):
                  input_artifact_name,
                  stage_name_to_add,
                  environment=None,
-                 vpc_config=None):
+                 vpc_config=None,
+                 buildspec='buildspec.yml'):
         """
+        :type buildspec: basestring path to buildspec.yml or text containing the buildspec.
         :type input_artifact_name: basestring The artifact name in the pipeline. Must contain a buildspec.yml
         :type action_name: basestring Displayed on the console
         :type environment: troposphere.codebuild.Environment Optional if you need ENV vars or a different build.
         :type vpc_config.Vpc_Config: Only required if the codebuild step requires access to the VPC
         """
         step.Step.__init__(self)
+        self.buildspec = buildspec
         self.environment = environment
         self.input_artifact_name = input_artifact_name
         self.action_name = action_name
@@ -124,7 +127,7 @@ class CodeBuildAction(step.Step):
         # Configure vpc if available
         if self.vpc_config:
             sg = ec2.SecurityGroup(
-                "CodebBuild%sSG" % chain_context.instance_name,
+                "CodebBuild%s%sSG" % (self.stage_name_to_add ,self.action_name),
                 GroupDescription="Gives codebuild access to VPC",
                 VpcId=self.vpc_config.vpc_id,
                 SecurityGroupEgress=[
@@ -144,6 +147,7 @@ class CodeBuildAction(step.Step):
                 )}
 
         project_name = "project%s" % name
+
         project = codebuild.Project(
             project_name,
             DependsOn=codebuild_role,
@@ -154,6 +158,7 @@ class CodeBuildAction(step.Step):
             Source=codebuild.Source(
                 "Deploy",
                 Type='CODEPIPELINE',
+                BuildSpec=self.buildspec,
             ),
             **vpc_config
         )
