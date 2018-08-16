@@ -98,7 +98,7 @@ class TestPipelineStep(unittest.TestCase):
                     'dummy-subnet1'
                 ]
             ),
-            action_name="test-action",
+            action_name="testAction",
             stage_name_to_add="thestage",
             input_artifact_name="test-input"
         )
