@@ -60,6 +60,6 @@ setup(
     tests_require=test_requirements,
     extras_require=extras,
     url='https://github.com/brettswift/cumulus',
-    version='0.1.1',
+    version='0.1.2',
     zip_safe=False,
 )
