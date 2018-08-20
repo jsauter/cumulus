@@ -148,6 +148,9 @@ class CodeBuildAction(step.Step):
 
         project_name = "project%s" % name
 
+        print("Action %s is using buildspec: " % self.action_name)
+        print(self.buildspec)
+
         project = codebuild.Project(
             project_name,
             DependsOn=codebuild_role,
@@ -164,30 +167,3 @@ class CodeBuildAction(step.Step):
         )
 
         return project
-
-
-#
-# source_stage = codepipeline.Stages(
-#     Name="SourceStage",
-#     Actions=[
-#         codepipeline.Actions(
-#             Name="SourceAction",
-#             ActionTypeId=codepipeline.ActionTypeId(
-#                 Category="Source",
-#                 Owner="AWS",
-#                 Version="1",
-#                 Provider='S3',
-#             ),
-#             OutputArtifacts=[
-#                 codepipeline.OutputArtifacts(
-#                     Name=SOURCE_STAGE_OUTPUT_NAME
-#                 )
-#             ],
-#             Configuration={
-#                 "S3Bucket": Ref(pipeline_bucket),
-#                 "S3ObjectKey": self.artifact_path
-#             },
-#             RunOrder="1"
-#         )
-#     ]
-# )
