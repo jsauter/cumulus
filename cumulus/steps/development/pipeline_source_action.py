@@ -40,7 +40,7 @@ class PipelineSourceAction(step.Step):
         self.action_name = action_name
 
     def handle(self, chain_context):
-        print("Adding action %s." % self.action_name)
+        print("Adding source action %s." % self.action_name)
 
         policy_name = "CodeBuildPolicy%s" % chain_context.instance_name
         codebuild_policy = cumulus.policies.codebuild.get_policy_code_build_general_access(policy_name)

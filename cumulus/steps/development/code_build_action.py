@@ -106,11 +106,9 @@ class CodeBuildAction(step.Step):
         chain_context.template.add_resource(project)
 
         template = chain_context.template
-        stage_to_add = self.stage_name_to_add
-
         stage = cumulus.util.tropo.TemplateQuery.get_pipeline_stage_by_name(
             template=template,
-            stage_name=stage_to_add,
+            stage_name=self.stage_name_to_add,
         )
 
         # TODO accept a parallel action to the previous action, and don't +1 here.
