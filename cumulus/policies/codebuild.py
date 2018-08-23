@@ -3,6 +3,7 @@ import awacs.aws
 import awacs.logs
 import awacs.iam
 import awacs.s3
+from awacs import ecr
 
 from troposphere import iam
 
@@ -35,6 +36,9 @@ def get_policy_code_build_general_access(policy_name):
                         awacs.aws.Action("lambda", "*"),
                         awacs.aws.Action("sqs", "*"),
                         awacs.aws.Action("events", "*"),
+                        awacs.ecr.GetDownloadUrlForLayer,
+                        awacs.ecr.BatchGetImage,
+                        awacs.ecr.BatchCheckLayerAvailability,
                         awacs.iam.PassRole,
                     ],
                     Resource=["*"]

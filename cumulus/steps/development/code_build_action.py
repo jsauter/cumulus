@@ -106,11 +106,9 @@ class CodeBuildAction(step.Step):
         chain_context.template.add_resource(project)
 
         template = chain_context.template
-        stage_to_add = self.stage_name_to_add
-
         stage = cumulus.util.tropo.TemplateQuery.get_pipeline_stage_by_name(
             template=template,
-            stage_name=stage_to_add,
+            stage_name=self.stage_name_to_add,
         )
 
         # TODO accept a parallel action to the previous action, and don't +1 here.
@@ -148,6 +146,9 @@ class CodeBuildAction(step.Step):
 
         project_name = "project%s" % name
 
+        print("Action %s is using buildspec: " % self.action_name)
+        print(self.buildspec)
+
         project = codebuild.Project(
             project_name,
             DependsOn=codebuild_role,
@@ -164,30 +165,3 @@ class CodeBuildAction(step.Step):
         )
 
         return project
-
-
-#
-# source_stage = codepipeline.Stages(
-#     Name="SourceStage",
-#     Actions=[
-#         codepipeline.Actions(
-#             Name="SourceAction",
-#             ActionTypeId=codepipeline.ActionTypeId(
-#                 Category="Source",
-#                 Owner="AWS",
-#                 Version="1",
-#                 Provider='S3',
-#             ),
-#             OutputArtifacts=[
-#                 codepipeline.OutputArtifacts(
-#                     Name=SOURCE_STAGE_OUTPUT_NAME
-#                 )
-#             ],
-#             Configuration={
-#                 "S3Bucket": Ref(pipeline_bucket),
-#                 "S3ObjectKey": self.artifact_path
-#             },
-#             RunOrder="1"
-#         )
-#     ]
-# )
