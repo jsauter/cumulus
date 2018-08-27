@@ -26,7 +26,8 @@ test_requirements = [
     'flake8',
     'pytest-watch',
     'pytest-cov',
-    'coveralls'
+    'coveralls',
+    'awscli'
 ]
 
 extras = {

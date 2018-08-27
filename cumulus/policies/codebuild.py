@@ -3,7 +3,7 @@ import awacs.aws
 import awacs.logs
 import awacs.iam
 import awacs.s3
-from awacs import ecr
+import awacs.ecr
 
 from troposphere import iam
 

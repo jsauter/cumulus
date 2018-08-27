@@ -1,6 +1,6 @@
 # This file is  used in an integration test for this project.
 
-namespace: ${namespace}
+namespace: cumulus-${namespace}
 
 stacker_bucket: bswift-spike
 
