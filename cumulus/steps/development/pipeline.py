@@ -176,8 +176,13 @@ class Pipeline(step.Step):
             )
         )
 
+        pipeline_output = troposphere.Output(
+            "PipelineLogicalName",
+            Description="Pipeline (logical id)",
+            Value=Ref(generic_pipeline),
+        )
+
         chain_context.template.add_resource(pipeline_bucket)
         chain_context.template.add_resource(pipeline_service_role)
         chain_context.template.add_resource(generic_pipeline)
-
-        # chain_context.metadata[cumulus.steps.development.META_LAST_STAGE_OUTPUT] = SOURCE_STAGE_OUTPUT_NAME
+        chain_context.template.add_output(pipeline_output)
