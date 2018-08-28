@@ -19,7 +19,7 @@ class PipelineSimple(Blueprint):
     def create_template(self):
 
         t = self.template
-        t.add_description("development spike for dtf")
+        t.add_description("Acceptance Tests for cumulus pipelines")
 
         instance = self.name + self.context.environment['env']
 
@@ -62,11 +62,14 @@ class PipelineSimple(Blueprint):
             ),
         )
 
-        the_chain.add(code_build_action.CodeBuildAction(
-            action_name="DeployMyStuff",
-            stage_name_to_add=deploy_stage_name,
-            input_artifact_name=service_artifact,
-        ))
+        inline_ls_url_spec = """version: 0.2
+phases:
+  build:
+    commands:
+      - ls -lah
+      - env
+      - curl $URL
+"""
 
         test_env = troposphere.codebuild.Environment(
             ComputeType='BUILD_GENERAL1_SMALL',
@@ -77,21 +80,23 @@ class PipelineSimple(Blueprint):
             ],
         )
 
-        inline_echo_url_spec = """version: 0.2
-        phases:
-          build:
-            commands:
-               - echo $URL
-                """
-
         the_chain.add(code_build_action.CodeBuildAction(
-            action_name="NotificationSmokeTest",
+            action_name="DeployMyStuff",
             stage_name_to_add=deploy_stage_name,
             input_artifact_name=service_artifact,
             environment=test_env,
-            buildspec='buildspec_smoke_test.yml',
+            buildspec=inline_ls_url_spec,
         ))
 
+        # the_chain.add(code_build_action.CodeBuildAction(
+        #     action_name="NotificationSmokeTest",
+        #     stage_name_to_add=deploy_stage_name,
+        #     input_artifact_name=service_artifact,
+        #     environment=test_env,
+        #     buildspec='buildspec_smoke_test.yml',
+        # ))
+
+        # TODO: integration tests don't confirm the below.. yet.  Do it.
         destroy_stage_name = "EchoAURL"
         the_chain.add(
             pipeline_stage.PipelineStage(
@@ -105,10 +110,9 @@ class PipelineSimple(Blueprint):
         ))
 
         the_chain.add(code_build_action.CodeBuildAction(
-            action_name="DestroyRocketChat",
+            action_name="DestroyService",
             stage_name_to_add=destroy_stage_name,
             input_artifact_name=service_artifact,
-            buildspec=inline_echo_url_spec,
         ))
 
         chain_context = chaincontext.ChainContext(
