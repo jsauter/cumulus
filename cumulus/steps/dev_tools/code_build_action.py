@@ -18,7 +18,7 @@ from troposphere import iam,\
 
 from cumulus.chain import step
 
-from cumulus.steps.development import META_PIPELINE_BUCKET_POLICY_REF, \
+from cumulus.steps.dev_tools import META_PIPELINE_BUCKET_POLICY_REF, \
     META_PIPELINE_BUCKET_REF
 
 

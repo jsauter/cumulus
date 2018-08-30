@@ -12,7 +12,7 @@ import cumulus.policies.codebuild
 import cumulus.types.codebuild.buildaction
 import cumulus.util.tropo
 from cumulus.chain import step
-from cumulus.steps.development import META_PIPELINE_BUCKET_POLICY_REF
+from cumulus.steps.dev_tools import META_PIPELINE_BUCKET_POLICY_REF
 
 
 class ApprovalAction(step.Step):
