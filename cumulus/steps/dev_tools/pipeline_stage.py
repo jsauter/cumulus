@@ -13,6 +13,19 @@ class PipelineStage(step.Step):
         """
         step.Step.__init__(self)
         self.stage_name = stage_name
+        self._actions = []  # type: step.Step[]
+
+    @property
+    def actions(self):
+        return self._actions
+
+    def add_action(self, action):
+        """
+        Currently actions are just type Step, however # TODO: only Stage Actions should be allowed
+        :param action: step.Step
+        :return:
+        """
+        self._actions.append(action)
 
     def handle(self, chain_context):
 
@@ -29,5 +42,9 @@ class PipelineStage(step.Step):
         stages = found_pipeline.properties['Stages']  # type: list
 
         stages.append(pipeline_stage)
+
+        for action in self._actions:
+            action.stage_name_to_add = self.stage_name  # TODO: refactor so this is typed. multiple inheritance?
+            action.handle(chain_context=chain_context)
 
         print("Added stage to pipeline %s" % stages.count(stages))

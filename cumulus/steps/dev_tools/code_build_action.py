@@ -27,7 +27,7 @@ class CodeBuildAction(step.Step):
     def __init__(self,
                  action_name,
                  input_artifact_name,
-                 stage_name_to_add,
+                 stage_name_to_add=None,
                  environment=None,
                  vpc_config=None,
                  buildspec='buildspec.yml'):
@@ -47,6 +47,10 @@ class CodeBuildAction(step.Step):
         self.stage_name_to_add = stage_name_to_add
 
     def handle(self, chain_context):
+
+        # Allowed to be None because if you're adding from the stage this is set after creation
+        if not self.stage_name_to_add:
+            raise ValueError("Build action %s requires a stage name" % self.action_name)
 
         print("Adding action %stage." % self.action_name)
 
