@@ -7,7 +7,7 @@ from cumulus.steps.dev_tools import pipeline, code_build_action, pipeline_stage,
 from cumulus.steps.dev_tools.approval_action import ApprovalAction
 
 
-class PipelineSimple(Blueprint):
+class PipelineUsingDSL(Blueprint):
     """
     An example dev_tools that doesn't do anything interesting.
     """
@@ -43,19 +43,18 @@ class PipelineSimple(Blueprint):
         deploy_stage_name = "DeployStage"
         service_artifact = "ServiceArtifact"
 
-        the_chain.add(
-            pipeline_stage.PipelineStage(stage_name=source_stage_name)
-        )
+        source_stage = pipeline_stage.PipelineStage(stage_name=source_stage_name)
 
-        the_chain.add(
-            pipeline_source_action.PipelineSourceAction(
+        source_action = pipeline_source_action.PipelineSourceAction(
                 action_name="MicroserviceSource",
                 output_artifact_name=service_artifact,
-                stage_name_to_add=source_stage_name,
                 s3_bucket_name=pipeline_bucket_name,
                 s3_object_key="artifact.tar.gz"
             )
-        )
+
+        source_stage.add_action(action=source_action)
+
+        the_chain.add(source_stage)
 
         the_chain.add(
             pipeline_stage.PipelineStage(

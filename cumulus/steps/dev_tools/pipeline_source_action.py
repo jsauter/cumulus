@@ -22,7 +22,8 @@ class PipelineSourceAction(step.Step):
                  action_name,
                  output_artifact_name,
                  s3_bucket_name,
-                 s3_object_key
+                 s3_object_key,
+                 stage_name_to_add=None,
                  ):
         """
         :type s3_object_key: basestring Path of the artifact in the bucket.
@@ -34,12 +35,17 @@ class PipelineSourceAction(step.Step):
         :type vpc_config.Vpc_Config: Only required if the codebuild step requires access to the VPC
         """
         step.Step.__init__(self)
+        self.stage_name_to_add = stage_name_to_add
         self.s3_object_key = s3_object_key
         self.s3_bucket_name = s3_bucket_name
         self.output_artifact_name = output_artifact_name
         self.action_name = action_name
 
     def handle(self, chain_context):
+        # Allowed to be None because if you're adding from the stage this is set after creation
+        if not self.stage_name_to_add:
+            raise ValueError("Build action %s requires a stage name" % self.action_name)
+
         print("Adding source action %s." % self.action_name)
 
         policy_name = "CodeBuildPolicy%s" % chain_context.instance_name
@@ -83,18 +89,21 @@ class PipelineSourceAction(step.Step):
 
         chain_context.template.add_resource(codebuild_role)
 
-        found_pipelines = TemplateQuery.get_resource_by_type(
-            template=chain_context.template,
-            type_to_find=codepipeline.Pipeline)
-        pipeline = found_pipelines[0]
+        # found_pipelines = TemplateQuery.get_resource_by_type(
+        #     template=chain_context.template,
+        #     type_to_find=codepipeline.Pipeline)
+        # pipeline = found_pipelines[0]
 
         # Alternate way to get this
         # dummy = TemplateQuery.get_resource_by_title(chain_context.template, 'AppPipeline')
 
-        stages = pipeline.Stages  # type: list
+        # stages = pipeline.Stages  # type: list
 
-        # TODO: find stage by name
-        first_stage = stages[0]
+        stage = TemplateQuery.get_pipeline_stage_by_name(
+            template=chain_context.template,
+            stage_name=self.stage_name_to_add,
+        )
 
-        # TODO accept a parallel action to the previous action, and don't +1 here.
-        first_stage.Actions.append(source_action)
+        # stage = stages[0]
+
+        stage.Actions.append(source_action)

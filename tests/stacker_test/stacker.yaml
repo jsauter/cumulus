@@ -13,3 +13,5 @@ stacks:
 #    class_path: blueprints.s3_bucket.S3Simple
   - name: pipelinesimple
     class_path: blueprints.pipeline_simple.PipelineSimple
+  - name: pipelinewithdsl
+    class_path: blueprints.pipeline_using_dsl.PipelineUsingDSL

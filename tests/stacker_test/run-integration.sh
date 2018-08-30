@@ -1,5 +1,25 @@
 #!/usr/bin/env bash
 
+#!/usr/bin/env bash
+
+usage() { echo "Usage: $0 [-s <stack name from within stacker.yaml>]" 1>&2; exit 1; }
+
+while getopts ":s:" o; do
+    case "${o}" in
+        s)
+            stack_name=${OPTARG}
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+if [ -z "${stack_name}" ] ; then
+    usage
+fi
+
 ACCOUNT_ID=`aws sts get-caller-identity | jq .Account | tr -d '"' `
 NAMESPACE=acc # must match the namespace in the conf file
 BUCKET="cumulus-${NAMESPACE}-${ACCOUNT_ID}-automatedtests"
@@ -9,7 +29,7 @@ echo "Using bucket: ${BUCKET}"
 
 set -e #Important. Script will exit appropriately if there is an error.
 
-stacker build conf/acceptance.env stacker.yaml --recreate-failed -t
+stacker build conf/acceptance.env stacker.yaml --recreate-failed -t --stacks ${stack_name}
 
 ARTIFACT_NAME='artifact.tar.gz'
 TEMP_DIR='ac_build'
