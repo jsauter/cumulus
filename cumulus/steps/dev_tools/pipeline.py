@@ -10,7 +10,7 @@ import awacs.ec2
 import awacs.iam
 
 from cumulus.chain import step
-import cumulus.steps.development
+import cumulus.steps.dev_tools
 
 from troposphere import codepipeline, Ref, iam
 from troposphere.s3 import Bucket, VersioningConfiguration
@@ -102,8 +102,8 @@ class Pipeline(step.Step):
 
         chain_context.template.add_resource(pipeline_bucket_access_policy)
         # pipeline_bucket could be a string or Join object.. unit test this.
-        chain_context.metadata[cumulus.steps.development.META_PIPELINE_BUCKET_REF] = Ref(pipeline_bucket)
-        chain_context.metadata[cumulus.steps.development.META_PIPELINE_BUCKET_POLICY_REF] = Ref(pipeline_bucket_access_policy)
+        chain_context.metadata[cumulus.steps.dev_tools.META_PIPELINE_BUCKET_REF] = Ref(pipeline_bucket)
+        chain_context.metadata[cumulus.steps.dev_tools.META_PIPELINE_BUCKET_POLICY_REF] = Ref(pipeline_bucket_access_policy)
 
         pipeline_policy = iam.Policy(
             PolicyName="%sPolicy" % self.name,

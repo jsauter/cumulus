@@ -20,7 +20,7 @@ class ChainContext:
     def metadata(self):
         """
         Steps can write data here to be used later in the chain.
-        Example: Code development initial step might create an s3 bucket
+        Example: Code dev_tools initial step might create an s3 bucket
                  Subsequent steps might want to reference this.
                  It could be a string, or even a troposphere Ref object.
         :return:

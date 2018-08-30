@@ -3,13 +3,13 @@ from stacker.blueprints.base import Blueprint
 import troposphere.codebuild
 
 from cumulus.chain import chain, chaincontext
-from cumulus.steps.development import pipeline, code_build_action, pipeline_stage, pipeline_source_action
-from cumulus.steps.development.approval_action import ApprovalAction
+from cumulus.steps.dev_tools import pipeline, code_build_action, pipeline_stage, pipeline_source_action
+from cumulus.steps.dev_tools.approval_action import ApprovalAction
 
 
 class PipelineSimple(Blueprint):
     """
-    An example development that doesn't do anything interesting.
+    An example dev_tools that doesn't do anything interesting.
     """
 
     VARIABLES = {

@@ -11,8 +11,8 @@ import troposphere
 from troposphere import codepipeline, codebuild
 
 from cumulus.chain import chaincontext
-from cumulus.steps.development import pipeline, code_build_action
-from cumulus.steps.development.vpc_config import VpcConfig
+from cumulus.steps.dev_tools import pipeline, code_build_action
+from cumulus.steps.dev_tools.vpc_config import VpcConfig
 from cumulus.util.tropo import TemplateQuery
 
 
@@ -42,7 +42,7 @@ class TestPipelineStep(unittest.TestCase):
     #     sut.handle(self.context)
     #     self.assertIsInstance(sut, step.Step)
     #     self.assertTrue(
-    #         expr=(cumulus.steps.development.META_LAST_STAGE_OUTPUT in self.context.metadata),
+    #         expr=(cumulus.steps.dev_tools.META_LAST_STAGE_OUTPUT in self.context.metadata),
     #         msg="Expected Pipeline would set output artifact"
     #     )
 
@@ -70,7 +70,7 @@ class TestPipelineStep(unittest.TestCase):
     #
     #     found_pipeline = TemplateQuery.get_resource_by_type(t, codepipeline.Pipeline)[0]
     #     stages = found_pipeline.properties['Stages']
-    #     self.assertTrue(len(stages) == 2, msg="Expected Code Build to add a stage to the development")
+    #     self.assertTrue(len(stages) == 2, msg="Expected Code Build to add a stage to the dev_tools")
 
     def test_code_build_should_not_add_vpc_config(self):
 
