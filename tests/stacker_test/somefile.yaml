@@ -1,0 +1,1120 @@
+Description: Acceptance Tests for cumulus scaling groups
+Mappings:
+  AmiMap:
+    us-west-2:
+      amazonLinux2: ami-a9d09ed1
+Resources:
+  InstanceProfilewebsitesimple:
+    Properties:
+      Roles:
+        - !Ref 'SomeRoleName1'
+    Type: AWS::IAM::InstanceProfile
+  Route53Records:
+    Properties:
+      HostedZoneName: !Join
+        - ''
+        - - !Ref 'BaseDomain'
+          - .
+      RecordSets:
+        - AliasTarget:
+            DNSName: !Ref 'ALBDNSName'
+            EvaluateTargetHealth: 'false'
+            HostedZoneId: !Ref 'AlbCanonicalHostedZoneID'
+          Name: !Join
+            - ''
+            - - cumulus
+              - '-'
+              - cumulusdns
+              - .
+              - !Ref 'BaseDomain'
+              - .
+          SetIdentifier: original
+          Type: A
+          Weight: 1
+    Type: AWS::Route53::RecordSetGroup
+  SgCidrAccessCidr100008ToASGPort22:
+    Properties:
+      CidrIp: 10.0.0.0/8
+      FromPort: '22'
+      GroupId: !Ref 'sg1websitesimple'
+      IpProtocol: tcp
+      ToPort: '22'
+    Type: AWS::EC2::SecurityGroupIngress
+  SgCidrAccessCidr100008ToASGPort8000:
+    Properties:
+      CidrIp: 10.0.0.0/8
+      FromPort: '8000'
+      GroupId: !Ref 'sg1websitesimple'
+      IpProtocol: tcp
+      ToPort: '8000'
+    Type: AWS::EC2::SecurityGroupIngress
+  SomeRoleName1:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+                - s3.amazonaws.com
+    Type: AWS::IAM::Role
+  asgwebsitesimple:
+    Properties:
+      AvailabilityZones: !Ref 'AvailabilityZones'
+      LaunchConfigurationName: !Ref 'lcwebsitesimple'
+      MaxSize: !Ref 'MaxSize'
+      MinSize: !Ref 'MinSize'
+      Tags:
+        - Key: Name
+          PropagateAtLaunch: true
+          Value: cumulustestscalinggroupInstanceProfilewebsitesimple
+        - Key: CE-OffHours
+          PropagateAtLaunch: true
+          Value: 'off'
+      TargetGroupARNs:
+        - !Ref 'cumulustesttargetgroup'
+      VPCZoneIdentifier: !Ref 'PrivateSubnets'
+    Type: AWS::AutoScaling::AutoScalingGroup
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: 'true'
+      AutoScalingRollingUpdate:
+        MaxBatchSize: '1'
+        MinInstancesInService: '1'
+        PauseTime: PT5M
+        WaitOnResourceSignals: 'true'
+  cumulustesttargetgroup:
+    Properties:
+      HealthCheckIntervalSeconds: '30'
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: '10'
+      HealthyThresholdCount: '4'
+      Matcher:
+        HttpCode: '200'
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: '3'
+      VpcId: !Ref 'VpcId'
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  lcwebsitesimple:
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          default:
+            - install_and_run
+        install_and_run:
+          commands:
+            '01-startup':
+              command: nohup python -m SimpleHTTPServer 8000 &
+    Properties:
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: '40'
+      IamInstanceProfile: !Ref 'InstanceProfilewebsitesimple'
+      ImageId: !FindInMap
+        - AmiMap
+        - !Ref 'AWS::Region'
+        - !Ref 'ImageName'
+      InstanceType: !Ref 'InstanceType'
+      KeyName: !Ref 'SshKeyName'
+      SecurityGroups:
+        - !Ref 'sg1websitesimple'
+        - !Ref 'sg2websitesimple'
+      UserData: !Base64
+        Fn::Join:
+          - ''
+          - - "#!/bin/bash -xe\n"
+            - "yum update aws-cfn-bootstrap\n"
+            - "# Install the files and packages from the metadata\n"
+            - '/opt/aws/bin/cfn-init '
+            - '         --stack '
+            - !Ref 'AWS::StackName'
+            - '         --resource '
+            - lcwebsitesimple
+            - '         --configsets default '
+            - '         --region '
+            - !Ref 'AWS::Region'
+            - "\n"
+            - "# Signal the ASG we are ready\n\n"
+            - /opt/aws/bin/cfn-signal -e 0
+            - '    --resource websitesimple'
+            - '    --stack '
+            - !Ref 'AWS::StackName'
+            - '    --region '
+            - !Ref 'AWS::Region'
+            - "\n"
+    Type: AWS::AutoScaling::LaunchConfiguration
+  sg1websitesimple:
+    Properties:
+      GroupDescription: sg1websitesimple
+      VpcId: vpc-894b89ef
+    Type: AWS::EC2::SecurityGroup
+  sg2websitesimple:
+    Properties:
+      GroupDescription: sg2websitesimple
+      VpcId: vpc-894b89ef
+    Type: AWS::EC2::SecurityGroup
+Description: Acceptance Tests for cumulus scaling groups
+Mappings:
+  AmiMap:
+    us-west-2:
+      amazonLinux2: ami-a9d09ed1
+Resources:
+  InstanceProfilewebsitesimple:
+    Properties:
+      Roles:
+        - !Ref 'SomeRoleName1'
+    Type: AWS::IAM::InstanceProfile
+  Route53Records:
+    Properties:
+      HostedZoneName: !Join
+        - ''
+        - - !Ref 'BaseDomain'
+          - .
+      RecordSets:
+        - AliasTarget:
+            DNSName: !Ref 'ALBDNSName'
+            EvaluateTargetHealth: 'false'
+            HostedZoneId: !Ref 'AlbCanonicalHostedZoneID'
+          Name: !Join
+            - ''
+            - - cumulus
+              - '-'
+              - cumulusdns
+              - .
+              - !Ref 'BaseDomain'
+              - .
+          SetIdentifier: original
+          Type: A
+          Weight: 1
+    Type: AWS::Route53::RecordSetGroup
+  SgCidrAccessCidr100008ToASGPort22:
+    Properties:
+      CidrIp: 10.0.0.0/8
+      FromPort: '22'
+      GroupId: !Ref 'sg1websitesimple'
+      IpProtocol: tcp
+      ToPort: '22'
+    Type: AWS::EC2::SecurityGroupIngress
+  SgCidrAccessCidr100008ToASGPort8000:
+    Properties:
+      CidrIp: 10.0.0.0/8
+      FromPort: '8000'
+      GroupId: !Ref 'sg1websitesimple'
+      IpProtocol: tcp
+      ToPort: '8000'
+    Type: AWS::EC2::SecurityGroupIngress
+  SomeRoleName1:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+                - s3.amazonaws.com
+    Type: AWS::IAM::Role
+  asgwebsitesimple:
+    Properties:
+      AvailabilityZones: !Ref 'AvailabilityZones'
+      LaunchConfigurationName: !Ref 'lcwebsitesimple'
+      MaxSize: !Ref 'MaxSize'
+      MinSize: !Ref 'MinSize'
+      Tags:
+        - Key: Name
+          PropagateAtLaunch: true
+          Value: cumulustestscalinggroupInstanceProfilewebsitesimple
+        - Key: CE-OffHours
+          PropagateAtLaunch: true
+          Value: 'off'
+      TargetGroupARNs:
+        - !Ref 'cumulustesttargetgroup'
+      VPCZoneIdentifier: !Ref 'PrivateSubnets'
+    Type: AWS::AutoScaling::AutoScalingGroup
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: 'true'
+      AutoScalingRollingUpdate:
+        MaxBatchSize: '1'
+        MinInstancesInService: '1'
+        PauseTime: PT5M
+        WaitOnResourceSignals: 'true'
+  cumulustesttargetgroup:
+    Properties:
+      HealthCheckIntervalSeconds: '30'
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: '10'
+      HealthyThresholdCount: '4'
+      Matcher:
+        HttpCode: '200'
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: '3'
+      VpcId: !Ref 'VpcId'
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  lcwebsitesimple:
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          default:
+            - install_and_run
+        install_and_run:
+          commands:
+            '01-startup':
+              command: nohup python -m SimpleHTTPServer 8000 &
+    Properties:
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: '40'
+      IamInstanceProfile: !Ref 'InstanceProfilewebsitesimple'
+      ImageId: !FindInMap
+        - AmiMap
+        - !Ref 'AWS::Region'
+        - !Ref 'ImageName'
+      InstanceType: !Ref 'InstanceType'
+      KeyName: !Ref 'SshKeyName'
+      SecurityGroups:
+        - !Ref 'sg1websitesimple'
+        - !Ref 'sg2websitesimple'
+      UserData: !Base64
+        Fn::Join:
+          - ''
+          - - "#!/bin/bash -xe\n"
+            - "yum update aws-cfn-bootstrap\n"
+            - "# Install the files and packages from the metadata\n"
+            - '/opt/aws/bin/cfn-init '
+            - '         --stack '
+            - !Ref 'AWS::StackName'
+            - '         --resource '
+            - lcwebsitesimple
+            - '         --configsets default '
+            - '         --region '
+            - !Ref 'AWS::Region'
+            - "\n"
+            - "# Signal the ASG we are ready\n\n"
+            - /opt/aws/bin/cfn-signal -e 0
+            - '    --resource websitesimple'
+            - '    --stack '
+            - !Ref 'AWS::StackName'
+            - '    --region '
+            - !Ref 'AWS::Region'
+            - "\n"
+    Type: AWS::AutoScaling::LaunchConfiguration
+  sg1websitesimple:
+    Properties:
+      GroupDescription: sg1websitesimple
+      VpcId: vpc-894b89ef
+    Type: AWS::EC2::SecurityGroup
+  sg2websitesimple:
+    Properties:
+      GroupDescription: sg2websitesimple
+      VpcId: vpc-894b89ef
+    Type: AWS::EC2::SecurityGroup
+Description: Acceptance Tests for cumulus scaling groups
+Mappings:
+  AmiMap:
+    us-west-2:
+      amazonLinux2: ami-a9d09ed1
+Resources:
+  InstanceProfilewebsitesimple:
+    Properties:
+      Roles:
+        - !Ref 'SomeRoleName1'
+    Type: AWS::IAM::InstanceProfile
+  Route53Records:
+    Properties:
+      HostedZoneName: !Join
+        - ''
+        - - !Ref 'BaseDomain'
+          - .
+      RecordSets:
+        - AliasTarget:
+            DNSName: !Ref 'ALBDNSName'
+            EvaluateTargetHealth: 'false'
+            HostedZoneId: !Ref 'AlbCanonicalHostedZoneID'
+          Name: !Join
+            - ''
+            - - cumulus
+              - '-'
+              - cumulusdns
+              - .
+              - !Ref 'BaseDomain'
+              - .
+          SetIdentifier: original
+          Type: A
+          Weight: 1
+    Type: AWS::Route53::RecordSetGroup
+  SgCidrAccessCidr100008ToASGPort22:
+    Properties:
+      CidrIp: 10.0.0.0/8
+      FromPort: '22'
+      GroupId: !Ref 'sg1websitesimple'
+      IpProtocol: tcp
+      ToPort: '22'
+    Type: AWS::EC2::SecurityGroupIngress
+  SgCidrAccessCidr100008ToASGPort8000:
+    Properties:
+      CidrIp: 10.0.0.0/8
+      FromPort: '8000'
+      GroupId: !Ref 'sg1websitesimple'
+      IpProtocol: tcp
+      ToPort: '8000'
+    Type: AWS::EC2::SecurityGroupIngress
+  SomeRoleName1:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+                - s3.amazonaws.com
+    Type: AWS::IAM::Role
+  asgwebsitesimple:
+    Properties:
+      AvailabilityZones: !Ref 'AvailabilityZones'
+      LaunchConfigurationName: !Ref 'lcwebsitesimple'
+      MaxSize: !Ref 'MaxSize'
+      MinSize: !Ref 'MinSize'
+      Tags:
+        - Key: Name
+          PropagateAtLaunch: true
+          Value: cumulustestscalinggroupInstanceProfilewebsitesimple
+        - Key: CE-OffHours
+          PropagateAtLaunch: true
+          Value: 'off'
+      TargetGroupARNs:
+        - !Ref 'cumulustesttargetgroup'
+      VPCZoneIdentifier: !Ref 'PrivateSubnets'
+    Type: AWS::AutoScaling::AutoScalingGroup
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: 'true'
+      AutoScalingRollingUpdate:
+        MaxBatchSize: '1'
+        MinInstancesInService: '1'
+        PauseTime: PT5M
+        WaitOnResourceSignals: 'true'
+  cumulustesttargetgroup:
+    Properties:
+      HealthCheckIntervalSeconds: '30'
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: '10'
+      HealthyThresholdCount: '4'
+      Matcher:
+        HttpCode: '200'
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: '3'
+      VpcId: !Ref 'VpcId'
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  lcwebsitesimple:
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          default:
+            - install_and_run
+        install_and_run:
+          commands:
+            '01-startup':
+              command: nohup python -m SimpleHTTPServer 8000 &
+    Properties:
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: '40'
+      IamInstanceProfile: !Ref 'InstanceProfilewebsitesimple'
+      ImageId: !FindInMap
+        - AmiMap
+        - !Ref 'AWS::Region'
+        - !Ref 'ImageName'
+      InstanceType: !Ref 'InstanceType'
+      KeyName: !Ref 'SshKeyName'
+      SecurityGroups:
+        - !Ref 'sg1websitesimple'
+        - !Ref 'sg2websitesimple'
+      UserData: !Base64
+        Fn::Join:
+          - ''
+          - - "#!/bin/bash -xe\n"
+            - "yum update aws-cfn-bootstrap\n"
+            - "# Install the files and packages from the metadata\n"
+            - '/opt/aws/bin/cfn-init '
+            - '         --stack '
+            - !Ref 'AWS::StackName'
+            - '         --resource '
+            - lcwebsitesimple
+            - '         --configsets default '
+            - '         --region '
+            - !Ref 'AWS::Region'
+            - "\n"
+            - "# Signal the ASG we are ready\n\n"
+            - /opt/aws/bin/cfn-signal -e 0
+            - '    --resource websitesimple'
+            - '    --stack '
+            - !Ref 'AWS::StackName'
+            - '    --region '
+            - !Ref 'AWS::Region'
+            - "\n"
+    Type: AWS::AutoScaling::LaunchConfiguration
+  sg1websitesimple:
+    Properties:
+      GroupDescription: sg1websitesimple
+      VpcId: vpc-894b89ef
+    Type: AWS::EC2::SecurityGroup
+  sg2websitesimple:
+    Properties:
+      GroupDescription: sg2websitesimple
+      VpcId: vpc-894b89ef
+    Type: AWS::EC2::SecurityGroup
+Description: Acceptance Tests for cumulus scaling groups
+Mappings:
+  AmiMap:
+    us-west-2:
+      amazonLinux2: ami-a9d09ed1
+Resources:
+  InstanceProfilewebsitesimple:
+    Properties:
+      Roles:
+        - !Ref 'SomeRoleName1'
+    Type: AWS::IAM::InstanceProfile
+  Route53Records:
+    Properties:
+      HostedZoneName: !Join
+        - ''
+        - - !Ref 'BaseDomain'
+          - .
+      RecordSets:
+        - AliasTarget:
+            DNSName: !Ref 'ALBDNSName'
+            EvaluateTargetHealth: 'false'
+            HostedZoneId: !Ref 'AlbCanonicalHostedZoneID'
+          Name: !Join
+            - ''
+            - - cumulus
+              - '-'
+              - cumulusdns
+              - .
+              - !Ref 'BaseDomain'
+              - .
+          SetIdentifier: original
+          Type: A
+          Weight: 1
+    Type: AWS::Route53::RecordSetGroup
+  SgCidrAccessCidr100008ToASGPort22:
+    Properties:
+      CidrIp: 10.0.0.0/8
+      FromPort: '22'
+      GroupId: !Ref 'sg1websitesimple'
+      IpProtocol: tcp
+      ToPort: '22'
+    Type: AWS::EC2::SecurityGroupIngress
+  SgCidrAccessCidr100008ToASGPort8000:
+    Properties:
+      CidrIp: 10.0.0.0/8
+      FromPort: '8000'
+      GroupId: !Ref 'sg1websitesimple'
+      IpProtocol: tcp
+      ToPort: '8000'
+    Type: AWS::EC2::SecurityGroupIngress
+  SomeRoleName1:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+                - s3.amazonaws.com
+    Type: AWS::IAM::Role
+  asgwebsitesimple:
+    Properties:
+      AvailabilityZones: !Ref 'AvailabilityZones'
+      LaunchConfigurationName: !Ref 'lcwebsitesimple'
+      MaxSize: !Ref 'MaxSize'
+      MinSize: !Ref 'MinSize'
+      Tags:
+        - Key: Name
+          PropagateAtLaunch: true
+          Value: cumulustestscalinggroupInstanceProfilewebsitesimple
+        - Key: CE-OffHours
+          PropagateAtLaunch: true
+          Value: 'off'
+      TargetGroupARNs:
+        - !Ref 'cumulustesttargetgroup'
+      VPCZoneIdentifier: !Ref 'PrivateSubnets'
+    Type: AWS::AutoScaling::AutoScalingGroup
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: 'true'
+      AutoScalingRollingUpdate:
+        MaxBatchSize: '1'
+        MinInstancesInService: '1'
+        PauseTime: PT5M
+        WaitOnResourceSignals: 'true'
+  cumulustesttargetgroup:
+    Properties:
+      HealthCheckIntervalSeconds: '30'
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: '10'
+      HealthyThresholdCount: '4'
+      Matcher:
+        HttpCode: '200'
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: '3'
+      VpcId: !Ref 'VpcId'
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  lcwebsitesimple:
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          default:
+            - install_and_run
+        install_and_run:
+          commands:
+            '01-startup':
+              command: nohup python -m SimpleHTTPServer 8000 &
+    Properties:
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: '40'
+      IamInstanceProfile: !Ref 'InstanceProfilewebsitesimple'
+      ImageId: !FindInMap
+        - AmiMap
+        - !Ref 'AWS::Region'
+        - !Ref 'ImageName'
+      InstanceType: !Ref 'InstanceType'
+      KeyName: !Ref 'SshKeyName'
+      SecurityGroups:
+        - !Ref 'sg1websitesimple'
+        - !Ref 'sg2websitesimple'
+      UserData: !Base64
+        Fn::Join:
+          - ''
+          - - "#!/bin/bash -xe\n"
+            - "yum update aws-cfn-bootstrap\n"
+            - "# Install the files and packages from the metadata\n"
+            - '/opt/aws/bin/cfn-init '
+            - '         --stack '
+            - !Ref 'AWS::StackName'
+            - '         --resource '
+            - lcwebsitesimple
+            - '         --configsets default '
+            - '         --region '
+            - !Ref 'AWS::Region'
+            - "\n"
+            - "# Signal the ASG we are ready\n\n"
+            - /opt/aws/bin/cfn-signal -e 0
+            - '    --resource websitesimple'
+            - '    --stack '
+            - !Ref 'AWS::StackName'
+            - '    --region '
+            - !Ref 'AWS::Region'
+            - "\n"
+    Type: AWS::AutoScaling::LaunchConfiguration
+  sg1websitesimple:
+    Properties:
+      GroupDescription: sg1websitesimple
+      VpcId: vpc-894b89ef
+    Type: AWS::EC2::SecurityGroup
+  sg2websitesimple:
+    Properties:
+      GroupDescription: sg2websitesimple
+      VpcId: vpc-894b89ef
+    Type: AWS::EC2::SecurityGroup
+Description: Acceptance Tests for cumulus scaling groups
+Mappings:
+  AmiMap:
+    us-west-2:
+      amazonLinux2: ami-a9d09ed1
+Resources:
+  InstanceProfilewebsitesimple:
+    Properties:
+      Roles:
+        - !Ref 'SomeRoleName1'
+    Type: AWS::IAM::InstanceProfile
+  Route53Records:
+    Properties:
+      HostedZoneName: !Join
+        - ''
+        - - !Ref 'BaseDomain'
+          - .
+      RecordSets:
+        - AliasTarget:
+            DNSName: !Ref 'ALBDNSName'
+            EvaluateTargetHealth: 'false'
+            HostedZoneId: !Ref 'AlbCanonicalHostedZoneID'
+          Name: !Join
+            - ''
+            - - cumulus
+              - '-'
+              - cumulusdns
+              - .
+              - !Ref 'BaseDomain'
+              - .
+          SetIdentifier: original
+          Type: A
+          Weight: 1
+    Type: AWS::Route53::RecordSetGroup
+  SgCidrAccessCidr100008ToASGPort22:
+    Properties:
+      CidrIp: 10.0.0.0/8
+      FromPort: '22'
+      GroupId: !Ref 'sg1websitesimple'
+      IpProtocol: tcp
+      ToPort: '22'
+    Type: AWS::EC2::SecurityGroupIngress
+  SgCidrAccessCidr100008ToASGPort8000:
+    Properties:
+      CidrIp: 10.0.0.0/8
+      FromPort: '8000'
+      GroupId: !Ref 'sg1websitesimple'
+      IpProtocol: tcp
+      ToPort: '8000'
+    Type: AWS::EC2::SecurityGroupIngress
+  SomeRoleName1:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+                - s3.amazonaws.com
+    Type: AWS::IAM::Role
+  asgwebsitesimple:
+    Properties:
+      AvailabilityZones: !Ref 'AvailabilityZones'
+      LaunchConfigurationName: !Ref 'lcwebsitesimple'
+      MaxSize: !Ref 'MaxSize'
+      MinSize: !Ref 'MinSize'
+      Tags:
+        - Key: Name
+          PropagateAtLaunch: true
+          Value: cumulustestscalinggroupInstanceProfilewebsitesimple
+        - Key: CE-OffHours
+          PropagateAtLaunch: true
+          Value: 'off'
+      TargetGroupARNs:
+        - !Ref 'cumulustesttargetgroup'
+      VPCZoneIdentifier: !Ref 'PrivateSubnets'
+    Type: AWS::AutoScaling::AutoScalingGroup
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: 'true'
+      AutoScalingRollingUpdate:
+        MaxBatchSize: '1'
+        MinInstancesInService: '1'
+        PauseTime: PT5M
+        WaitOnResourceSignals: 'true'
+  cumulustesttargetgroup:
+    Properties:
+      HealthCheckIntervalSeconds: '30'
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: '10'
+      HealthyThresholdCount: '4'
+      Matcher:
+        HttpCode: '200'
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: '3'
+      VpcId: !Ref 'VpcId'
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  lcwebsitesimple:
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          default:
+            - install_and_run
+        install_and_run:
+          commands:
+            '01-startup':
+              command: nohup python -m SimpleHTTPServer 8000 &
+    Properties:
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: '40'
+      IamInstanceProfile: !Ref 'InstanceProfilewebsitesimple'
+      ImageId: !FindInMap
+        - AmiMap
+        - !Ref 'AWS::Region'
+        - !Ref 'ImageName'
+      InstanceType: !Ref 'InstanceType'
+      KeyName: !Ref 'SshKeyName'
+      SecurityGroups:
+        - !Ref 'sg1websitesimple'
+        - !Ref 'sg2websitesimple'
+      UserData: !Base64
+        Fn::Join:
+          - ''
+          - - "#!/bin/bash -xe\n"
+            - "yum update aws-cfn-bootstrap\n"
+            - "# Install the files and packages from the metadata\n"
+            - '/opt/aws/bin/cfn-init '
+            - '         --stack '
+            - !Ref 'AWS::StackName'
+            - '         --resource '
+            - lcwebsitesimple
+            - '         --configsets default '
+            - '         --region '
+            - !Ref 'AWS::Region'
+            - "\n"
+            - "# Signal the ASG we are ready\n\n"
+            - /opt/aws/bin/cfn-signal -e 0
+            - '    --resource websitesimple'
+            - '    --stack '
+            - !Ref 'AWS::StackName'
+            - '    --region '
+            - !Ref 'AWS::Region'
+            - "\n"
+    Type: AWS::AutoScaling::LaunchConfiguration
+  sg1websitesimple:
+    Properties:
+      GroupDescription: sg1websitesimple
+      VpcId: vpc-894b89ef
+    Type: AWS::EC2::SecurityGroup
+  sg2websitesimple:
+    Properties:
+      GroupDescription: sg2websitesimple
+      VpcId: vpc-894b89ef
+    Type: AWS::EC2::SecurityGroup
+Description: Acceptance Tests for cumulus scaling groups
+Mappings:
+  AmiMap:
+    us-west-2:
+      amazonLinux2: ami-a9d09ed1
+Resources:
+  InstanceProfilewebsitesimple:
+    Properties:
+      Roles:
+        - !Ref 'SomeRoleName1'
+    Type: AWS::IAM::InstanceProfile
+  Route53Records:
+    Properties:
+      HostedZoneName: !Join
+        - ''
+        - - !Ref 'BaseDomain'
+          - .
+      RecordSets:
+        - AliasTarget:
+            DNSName: !Ref 'ALBDNSName'
+            EvaluateTargetHealth: 'false'
+            HostedZoneId: !Ref 'AlbCanonicalHostedZoneID'
+          Name: !Join
+            - ''
+            - - cumulus
+              - '-'
+              - cumulusdns
+              - .
+              - !Ref 'BaseDomain'
+              - .
+          SetIdentifier: original
+          Type: A
+          Weight: 1
+    Type: AWS::Route53::RecordSetGroup
+  SgCidrAccessCidr100008ToASGPort22:
+    Properties:
+      CidrIp: 10.0.0.0/8
+      FromPort: '22'
+      GroupId: !Ref 'sg1websitesimple'
+      IpProtocol: tcp
+      ToPort: '22'
+    Type: AWS::EC2::SecurityGroupIngress
+  SgCidrAccessCidr100008ToASGPort8000:
+    Properties:
+      CidrIp: 10.0.0.0/8
+      FromPort: '8000'
+      GroupId: !Ref 'sg1websitesimple'
+      IpProtocol: tcp
+      ToPort: '8000'
+    Type: AWS::EC2::SecurityGroupIngress
+  SomeRoleName1:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+                - s3.amazonaws.com
+    Type: AWS::IAM::Role
+  asgwebsitesimple:
+    Properties:
+      AvailabilityZones: !Ref 'AvailabilityZones'
+      LaunchConfigurationName: !Ref 'lcwebsitesimple'
+      MaxSize: !Ref 'MaxSize'
+      MinSize: !Ref 'MinSize'
+      Tags:
+        - Key: Name
+          PropagateAtLaunch: true
+          Value: cumulustestscalinggroupInstanceProfilewebsitesimple
+        - Key: CE-OffHours
+          PropagateAtLaunch: true
+          Value: 'off'
+      TargetGroupARNs:
+        - !Ref 'cumulustesttargetgroup'
+      VPCZoneIdentifier: !Ref 'PrivateSubnets'
+    Type: AWS::AutoScaling::AutoScalingGroup
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: 'true'
+      AutoScalingRollingUpdate:
+        MaxBatchSize: '1'
+        MinInstancesInService: '1'
+        PauseTime: PT5M
+        WaitOnResourceSignals: 'true'
+  cumulustesttargetgroup:
+    Properties:
+      HealthCheckIntervalSeconds: '30'
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: '10'
+      HealthyThresholdCount: '4'
+      Matcher:
+        HttpCode: '200'
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: '3'
+      VpcId: !Ref 'VpcId'
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  lcwebsitesimple:
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          default:
+            - install_and_run
+        install_and_run:
+          commands:
+            '01-startup':
+              command: nohup python -m SimpleHTTPServer 8000 &
+    Properties:
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: '40'
+      IamInstanceProfile: !Ref 'InstanceProfilewebsitesimple'
+      ImageId: !FindInMap
+        - AmiMap
+        - !Ref 'AWS::Region'
+        - !Ref 'ImageName'
+      InstanceType: !Ref 'InstanceType'
+      KeyName: !Ref 'SshKeyName'
+      SecurityGroups:
+        - !Ref 'sg1websitesimple'
+        - !Ref 'sg2websitesimple'
+      UserData: !Base64
+        Fn::Join:
+          - ''
+          - - "#!/bin/bash -xe\n"
+            - "yum update aws-cfn-bootstrap\n"
+            - "# Install the files and packages from the metadata\n"
+            - '/opt/aws/bin/cfn-init '
+            - '         --stack '
+            - !Ref 'AWS::StackName'
+            - '         --resource '
+            - lcwebsitesimple
+            - '         --configsets default '
+            - '         --region '
+            - !Ref 'AWS::Region'
+            - "\n"
+            - "# Signal the ASG we are ready\n\n"
+            - /opt/aws/bin/cfn-signal -e 0
+            - '    --resource websitesimple'
+            - '    --stack '
+            - !Ref 'AWS::StackName'
+            - '    --region '
+            - !Ref 'AWS::Region'
+            - "\n"
+    Type: AWS::AutoScaling::LaunchConfiguration
+  sg1websitesimple:
+    Properties:
+      GroupDescription: sg1websitesimple
+      VpcId: vpc-894b89ef
+    Type: AWS::EC2::SecurityGroup
+  sg2websitesimple:
+    Properties:
+      GroupDescription: sg2websitesimple
+      VpcId: vpc-894b89ef
+    Type: AWS::EC2::SecurityGroup
+Description: Acceptance Tests for cumulus scaling groups
+Mappings:
+  AmiMap:
+    us-west-2:
+      amazonLinux2: ami-a9d09ed1
+Resources:
+  InstanceProfilewebsitesimple:
+    Properties:
+      Roles:
+        - !Ref 'SomeRoleName1'
+    Type: AWS::IAM::InstanceProfile
+  Route53Records:
+    Properties:
+      HostedZoneName: !Join
+        - ''
+        - - !Ref 'BaseDomain'
+          - .
+      RecordSets:
+        - AliasTarget:
+            DNSName: !Ref 'AlbDNSName'
+            EvaluateTargetHealth: 'false'
+            HostedZoneId: !Ref 'AlbCanonicalHostedZoneID'
+          Name: !Join
+            - ''
+            - - cumulus
+              - '-'
+              - cumulusdns
+              - .
+              - !Ref 'BaseDomain'
+              - .
+          SetIdentifier: original
+          Type: A
+          Weight: 1
+    Type: AWS::Route53::RecordSetGroup
+  SgCidrAccessCidr100008ToASGPort22:
+    Properties:
+      CidrIp: 10.0.0.0/8
+      FromPort: '22'
+      GroupId: !Ref 'sg1websitesimple'
+      IpProtocol: tcp
+      ToPort: '22'
+    Type: AWS::EC2::SecurityGroupIngress
+  SgCidrAccessCidr100008ToASGPort8000:
+    Properties:
+      CidrIp: 10.0.0.0/8
+      FromPort: '8000'
+      GroupId: !Ref 'sg1websitesimple'
+      IpProtocol: tcp
+      ToPort: '8000'
+    Type: AWS::EC2::SecurityGroupIngress
+  SomeRoleName1:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+                - s3.amazonaws.com
+    Type: AWS::IAM::Role
+  asgwebsitesimple:
+    Properties:
+      AvailabilityZones: !Ref 'AvailabilityZones'
+      LaunchConfigurationName: !Ref 'lcwebsitesimple'
+      MaxSize: !Ref 'MaxSize'
+      MinSize: !Ref 'MinSize'
+      Tags:
+        - Key: Name
+          PropagateAtLaunch: true
+          Value: cumulustestscalinggroupInstanceProfilewebsitesimple
+        - Key: CE-OffHours
+          PropagateAtLaunch: true
+          Value: 'off'
+      TargetGroupARNs:
+        - !Ref 'cumulustesttargetgroup'
+      VPCZoneIdentifier: !Ref 'PrivateSubnets'
+    Type: AWS::AutoScaling::AutoScalingGroup
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: 'true'
+      AutoScalingRollingUpdate:
+        MaxBatchSize: '1'
+        MinInstancesInService: '1'
+        PauseTime: PT5M
+        WaitOnResourceSignals: 'true'
+  cumulustesttargetgroup:
+    Properties:
+      HealthCheckIntervalSeconds: '30'
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: '10'
+      HealthyThresholdCount: '4'
+      Matcher:
+        HttpCode: '200'
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: '3'
+      VpcId: !Ref 'VpcId'
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  lcwebsitesimple:
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          default:
+            - install_and_run
+        install_and_run:
+          commands:
+            '01-startup':
+              command: nohup python -m SimpleHTTPServer 8000 &
+    Properties:
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: '40'
+      IamInstanceProfile: !Ref 'InstanceProfilewebsitesimple'
+      ImageId: !FindInMap
+        - AmiMap
+        - !Ref 'AWS::Region'
+        - !Ref 'ImageName'
+      InstanceType: !Ref 'InstanceType'
+      KeyName: !Ref 'SshKeyName'
+      SecurityGroups:
+        - !Ref 'sg1websitesimple'
+        - !Ref 'sg2websitesimple'
+      UserData: !Base64
+        Fn::Join:
+          - ''
+          - - "#!/bin/bash -xe\n"
+            - "yum update aws-cfn-bootstrap\n"
+            - "# Install the files and packages from the metadata\n"
+            - '/opt/aws/bin/cfn-init '
+            - '         --stack '
+            - !Ref 'AWS::StackName'
+            - '         --resource '
+            - lcwebsitesimple
+            - '         --configsets default '
+            - '         --region '
+            - !Ref 'AWS::Region'
+            - "\n"
+            - "# Signal the ASG we are ready\n\n"
+            - /opt/aws/bin/cfn-signal -e 0
+            - '    --resource websitesimple'
+            - '    --stack '
+            - !Ref 'AWS::StackName'
+            - '    --region '
+            - !Ref 'AWS::Region'
+            - "\n"
+    Type: AWS::AutoScaling::LaunchConfiguration
+  sg1websitesimple:
+    Properties:
+      GroupDescription: sg1websitesimple
+      VpcId: vpc-894b89ef
+    Type: AWS::EC2::SecurityGroup
+  sg2websitesimple:
+    Properties:
+      GroupDescription: sg2websitesimple
+      VpcId: vpc-894b89ef
+    Type: AWS::EC2::SecurityGroup

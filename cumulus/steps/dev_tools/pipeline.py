@@ -184,7 +184,6 @@ class Pipeline(step.Step):
                 pipeline_policy
             ]
         )
-
         generic_pipeline = codepipeline.Pipeline(
             "Pipeline",
             # Name=chain_context.instance_name,
