@@ -9,6 +9,7 @@ import awacs.logs
 import awacs.ec2
 import awacs.iam
 import awacs.codecommit
+import awacs.awslambda
 
 from cumulus.chain import step
 import cumulus.steps.dev_tools
@@ -161,6 +162,13 @@ class Pipeline(step.Step):
                         ],
                         Resource=["*"]
                     ),
+                    awacs.aws.Statement(
+                        Effect=awacs.aws.Allow,
+                        Action=[
+                            awacs.aws.Action("lambda", "*")
+                        ],
+                        Resource=["*"]
+                    )
                 ],
             )
         )

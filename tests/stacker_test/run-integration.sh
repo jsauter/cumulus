@@ -57,10 +57,14 @@ while [ $SECONDS -lt ${end} ]; do
     fi
 done
 
-aws s3 rm s3://${BUCKET} --recursive
-python delete_bucket_versions.py ${BUCKET}
 
-stacker destroy conf/acceptance.env stacker.yaml --force -t
+SHOULD_DESTROY=false
+if $SHOULD_DESTROY; then
+    aws s3 rm s3://${BUCKET} --recursive
+    python delete_bucket_versions.py ${BUCKET}
+
+    stacker destroy conf/acceptance.env stacker.yaml --force -t
+fi
 
 echo "Completing with exit code ${pipeline_result}"
 

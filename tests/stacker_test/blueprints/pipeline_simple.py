@@ -3,7 +3,7 @@ from stacker.blueprints.base import Blueprint
 import troposphere.codebuild
 
 from cumulus.chain import chain, chaincontext
-from cumulus.steps.dev_tools import pipeline, code_build_action, pipeline_stage, pipeline_source_action
+from cumulus.steps.dev_tools import pipeline, code_build_action, pipeline_stage, pipeline_source_action, lambda_action
 from cumulus.steps.dev_tools.approval_action import ApprovalAction
 
 
@@ -80,13 +80,24 @@ phases:
             ],
         )
 
-        the_chain.add(code_build_action.CodeBuildAction(
+        deploy_test = code_build_action.CodeBuildAction(
             action_name="DeployMyStuff",
             stage_name_to_add=deploy_stage_name,
             input_artifact_name=service_artifact,
             environment=test_env,
             buildspec=inline_ls_url_spec,
-        ))
+        )
+
+        the_chain.add(deploy_test)
+
+        lambda1 = lambda_action.LambdaAction(
+            action_name="TriggerLambda",
+            input_artifact_name=service_artifact,  # TODO make optional ?
+            stage_name_to_add=deploy_stage_name,
+            function_name="bswift-mock-function-mock-createUser"
+        )
+
+        the_chain.add(lambda1)
 
         # the_chain.add(code_build_action.CodeBuildAction(
         #     action_name="NotificationSmokeTest",
