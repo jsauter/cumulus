@@ -22,8 +22,9 @@ class TemplateQuery:
             if item.__class__ is type_to_find:
                 result.append(item)
 
-        if len(result) == 0:
-            raise ValueError("Expected to find resource of type %s in template but did not." % type_to_find)
+        # TODO: review: how does this affect other behaviours..
+        # if len(result) == 0:
+        #     raise ValueError("Expected to find resource of type %s in template but did not." % type_to_find)
         return result
 
     @staticmethod
@@ -38,6 +39,10 @@ class TemplateQuery:
         found_pipelines = TemplateQuery.get_resource_by_type(
             template=template,
             type_to_find=codepipeline.Pipeline)
+
+        if not found_pipelines:
+            raise ValueError("Expected to find a pipeline in the template, but did not.")
+
         pipeline = found_pipelines[0]
         # Alternate way to get this
         # pipeline = TemplateQuery.get_resource_by_title(chain_context.template, 'AppPipeline')

@@ -27,7 +27,8 @@ test_requirements = [
     'pytest-watch',
     'pytest-cov',
     'coveralls',
-    'awscli'
+    'awscli',
+    'mock'
 ]
 
 extras = {

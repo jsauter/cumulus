@@ -49,7 +49,7 @@ class CodeBuildAction(step.Step):
     def handle(self, chain_context):
 
         print("Adding action %s Stage." % self.action_name)
-        suffix = "%s%s" %(self.stage_name_to_add, self.action_name)
+        suffix = "%s%s" % (self.stage_name_to_add, self.action_name)
 
         policy_name = "CodeBuildPolicy%s" % chain_context.instance_name
         role_name = "CodeBuildRole%s" % suffix
