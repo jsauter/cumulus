@@ -1,7 +1,7 @@
 from troposphere import codepipeline
 
 from cumulus.chain import step
-from cumulus.util.tropo import TemplateQuery
+from cumulus.util.template_query import TemplateQuery
 
 
 class PipelineStage(step.Step):

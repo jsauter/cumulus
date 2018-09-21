@@ -13,7 +13,7 @@ from troposphere import codepipeline, codebuild
 from cumulus.chain import chaincontext
 from cumulus.steps.dev_tools import pipeline, code_build_action
 from cumulus.steps.dev_tools.vpc_config import VpcConfig
-from cumulus.util.tropo import TemplateQuery
+from cumulus.util.template_query import TemplateQuery
 
 
 class TestPipelineStep(unittest.TestCase):

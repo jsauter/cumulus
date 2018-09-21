@@ -3,7 +3,7 @@ from termcolor import colored
 
 from cumulus.chain import chaincontext  # noqa
 from cumulus.chain.params import TemplateRequirements  # noqa
-from cumulus.util.tropo import TemplateQuery  # noqa
+from cumulus.util.template_query import TemplateQuery  # noqa
 
 
 class Chain:

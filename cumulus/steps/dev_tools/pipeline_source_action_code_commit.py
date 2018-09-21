@@ -13,7 +13,7 @@ import cumulus.policies.codebuild
 from cumulus.chain import step
 from cumulus.steps.dev_tools import META_PIPELINE_BUCKET_POLICY_REF
 from cumulus.types.codebuild.buildaction import SourceCodeCommitAction
-from cumulus.util.tropo import TemplateQuery
+from cumulus.util.template_query import TemplateQuery
 
 
 class SourceActionCodeCommit(step.Step):

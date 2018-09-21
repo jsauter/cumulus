@@ -10,10 +10,10 @@ import unittest
 import troposphere
 import troposphere.s3
 
-from cumulus.util.tropo import TemplateQuery
+from cumulus.util.template_query import TemplateQuery
 
 
-class TestPipelineStep(unittest.TestCase):
+class TestTemplateQuery(unittest.TestCase):
 
     def setUp(self):
         pass
