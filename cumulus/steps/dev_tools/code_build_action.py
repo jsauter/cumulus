@@ -11,7 +11,7 @@ import awacs.sts
 import cumulus.policies
 import cumulus.policies.codebuild
 import cumulus.types.codebuild.buildaction
-import cumulus.util.tropo
+import cumulus.util.template_query
 
 from troposphere import iam,\
     codebuild, codepipeline, Ref, ec2
@@ -107,7 +107,7 @@ class CodeBuildAction(step.Step):
         chain_context.template.add_resource(project)
 
         template = chain_context.template
-        stage = cumulus.util.tropo.TemplateQuery.get_pipeline_stage_by_name(
+        stage = cumulus.util.template_query.TemplateQuery.get_pipeline_stage_by_name(
             template=template,
             stage_name=self.stage_name_to_add,
         )

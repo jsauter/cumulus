@@ -10,7 +10,7 @@ from troposphere import iam
 import cumulus.policies
 import cumulus.policies.codebuild
 import cumulus.types.codebuild.buildaction
-import cumulus.util.tropo
+import cumulus.util.template_query
 from cumulus.chain import step
 from cumulus.steps.dev_tools import META_PIPELINE_BUCKET_POLICY_REF
 
@@ -67,7 +67,7 @@ class ApprovalAction(step.Step):
         template = chain_context.template
         stage_to_add = self.stage_name_to_add
 
-        stage = cumulus.util.tropo.TemplateQuery.get_pipeline_stage_by_name(
+        stage = cumulus.util.template_query.TemplateQuery.get_pipeline_stage_by_name(
             template=template,
             stage_name=stage_to_add,
         )
