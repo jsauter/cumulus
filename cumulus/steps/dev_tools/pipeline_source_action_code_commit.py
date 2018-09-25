@@ -5,6 +5,7 @@ import awacs.iam
 import awacs.logs
 import awacs.s3
 import awacs.sts
+import troposphere
 from troposphere import iam, \
     codepipeline, Ref
 
@@ -38,6 +39,7 @@ class SourceActionCodeCommit(step.Step):
     def handle(self, chain_context):
         print("Adding source action %s." % self.action_name)
 
+        template = chain_context.template
         policy_name = "CodeBuildPolicy%s" % chain_context.instance_name
         codebuild_policy = cumulus.policies.codebuild.get_policy_code_build_general_access(policy_name)
 
@@ -78,7 +80,7 @@ class SourceActionCodeCommit(step.Step):
             },
         )
 
-        chain_context.template.add_resource(codebuild_role)
+        template.add_resource(codebuild_role)
 
         found_pipelines = TemplateQuery.get_resource_by_type(
             template=chain_context.template,
@@ -95,3 +97,17 @@ class SourceActionCodeCommit(step.Step):
 
         # TODO accept a parallel action to the previous action, and don't +1 here.
         first_stage.Actions.append(source_action)
+
+        template.add_output(
+            troposphere.Output(
+                "RepoName%s" % self.action_name,
+                Value=Ref("RepositoryName")
+            )
+        )
+
+        template.add_output(
+            troposphere.Output(
+                "RepoBranch%s" % self.action_name,
+                Value=Ref("RepositoryBranch")
+            )
+        )

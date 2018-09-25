@@ -204,8 +204,8 @@ class Pipeline(step.Step):
         )
 
         pipeline_output = troposphere.Output(
-            "PipelineLogicalName",
-            Description="Pipeline (logical id)",
+            "PipelineName",
+            Description="Code Pipeline",
             Value=Ref(generic_pipeline),
         )
 
