@@ -49,6 +49,22 @@ class CodeBuildAction(troposphere.codepipeline.Actions):
         self.RunOrder = "1"
 
 
+class LambdaAction(troposphere.codepipeline.Actions):
+    """
+        This class doesn't do much except set the ActionType to reduce code clutter
+    """
+    def __init__(self, **kwargs):
+        super(LambdaAction, self).__init__(**kwargs)
+
+        self.ActionTypeId = troposphere.codepipeline.ActionTypeId(
+                Category="Invoke",
+                Owner="AWS",
+                Version="1",
+                Provider='Lambda',
+            )
+        self.RunOrder = "1"
+
+
 class ApprovalAction(troposphere.codepipeline.Actions):
     """
       This class doesn't do much except set the ActionType to reduce code clutter
