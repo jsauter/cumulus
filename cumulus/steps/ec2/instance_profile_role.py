@@ -3,7 +3,7 @@ from troposphere import Ref
 from cumulus.chain import step
 from troposphere.iam import InstanceProfile
 
-from cumulus.util.tropo import TemplateQuery
+from cumulus.util.template_query import TemplateQuery
 
 
 class InstanceProfileRole(step.Step):
@@ -29,4 +29,3 @@ class InstanceProfileRole(step.Step):
                 self.instance_profile_name,
                 Roles=[Ref(self.role)]
             ))
-

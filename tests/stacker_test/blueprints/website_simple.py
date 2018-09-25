@@ -1,10 +1,10 @@
 from awacs.aws import Allow, Principal, Policy, Statement
 from awacs.sts import AssumeRole
 from stacker.blueprints.base import Blueprint
-from stacker.blueprints.variables.types import EC2VPCId, EC2SubnetIdList, CFNCommaDelimitedList, CFNString, CFNNumber, \
+from stacker.blueprints.variables.types import EC2SubnetIdList, CFNCommaDelimitedList, CFNString, CFNNumber, \
     EC2KeyPairKeyName
 from troposphere import cloudformation, ec2, iam, Ref
-from troposphere.iam import Role
+
 from cumulus.chain import chain, chaincontext
 from cumulus.steps.ec2 import scaling_group, launch_config, block_device_data, ingress_rule, target_group, dns, \
     alb_port, listener_rule

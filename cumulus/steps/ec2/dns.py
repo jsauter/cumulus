@@ -1,6 +1,7 @@
-from troposphere import route53
 from troposphere import (
-    Ref, Join, ec2)
+    Ref, Join)
+from troposphere import route53
+
 from cumulus.chain import step
 
 

@@ -28,13 +28,13 @@ class Alb(step.Step):
     def create_conditions(self, template):
         template.add_condition(
             "UseSSL",
-            Not(Equals(Ref("ALBCertName"), "")))
+            Not(Equals(Ref("ALBCertName"), ""))
+        )
         template.add_condition(
             "UseIAMCert",
             Not(Equals(Ref("ALBCertType"), "acm")))
 
     def create_security_groups(self, template, instance_name):
-        asg_sg = CLUSTER_SG_NAME % instance_name
         alb_sg = ALB_SG_NAME % instance_name
 
         # ALB Security group

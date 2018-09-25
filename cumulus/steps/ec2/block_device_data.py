@@ -1,7 +1,6 @@
 from cumulus.chain import step
-from cumulus.util.tropo import TemplateQuery
+from cumulus.util.template_query import TemplateQuery
 from troposphere import autoscaling
-
 
 
 class BlockDeviceData(step.Step):

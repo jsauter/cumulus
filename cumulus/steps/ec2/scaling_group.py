@@ -1,6 +1,7 @@
-from troposphere import Ref, autoscaling, FindInMap, Base64, ec2
+from troposphere import Ref, autoscaling
 from troposphere.autoscaling import Tag as ASTag
 from troposphere.policies import UpdatePolicy, AutoScalingReplacingUpdate, AutoScalingRollingUpdate
+
 from cumulus.chain import step
 from cumulus.steps.ec2 import META_TARGET_GROUP_NAME
 

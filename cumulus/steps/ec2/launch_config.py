@@ -37,6 +37,8 @@ class LaunchConfig(step.Step):
                 asg_name="Asg%s" % chain_context.instance_name,
                 configsets='default',  # TODO: Fix this
             )
+        else:
+            user_data = self.user_data
 
         launch_config = autoscaling.LaunchConfiguration(
             lc_name,
@@ -49,8 +51,7 @@ class LaunchConfig(step.Step):
         template.add_resource(launch_config)
 
     def _get_security_group_parameters(self):
-        config = {
-        }
+        config = {}
 
         if self.vpc_id:
             config['VpcId'] = self.vpc_id
@@ -71,4 +72,3 @@ class LaunchConfig(step.Step):
         }
 
         return parameters
-
