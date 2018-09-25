@@ -5,6 +5,7 @@ import awacs.iam
 import awacs.logs
 import awacs.s3
 import awacs.sts
+import troposphere
 from troposphere import iam, \
     codepipeline
 
@@ -41,6 +42,8 @@ class PipelineSourceAction(step.Step):
 
     def handle(self, chain_context):
         print("Adding source action %s." % self.action_name)
+
+        template = chain_context.template
 
         policy_name = "CodeBuildPolicy%s" % chain_context.instance_name
         codebuild_policy = cumulus.policies.codebuild.get_policy_code_build_general_access(policy_name)
@@ -81,7 +84,7 @@ class PipelineSourceAction(step.Step):
             },
         )
 
-        chain_context.template.add_resource(codebuild_role)
+        template.add_resource(codebuild_role)
 
         found_pipelines = TemplateQuery.get_resource_by_type(
             template=chain_context.template,
@@ -98,3 +101,19 @@ class PipelineSourceAction(step.Step):
 
         # TODO accept a parallel action to the previous action, and don't +1 here.
         first_stage.Actions.append(source_action)
+
+        template.add_output(
+            troposphere.Output(
+                "PipelineBucket%s" % self.action_name,
+                Value=self.s3_bucket_name,
+                Description="A pipeline source bucket",
+            )
+        )
+        template.add_output(
+            troposphere.Output(
+                "PipelineTriggerObject%s" % self.action_name,
+                Value=self.s3_object_key,
+                Description="An s3 object key in the pipeline bucket "
+                            "that will trigger the pipeline",
+            )
+        )
