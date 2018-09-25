@@ -1,15 +1,56 @@
 # This file is  used in an integration test for this project.
 
-namespace: cumulus-${namespace}
+namespace: ${namespace}
 
 stacker_bucket: bswift-spike
 
 sys_path: .
+
+vpc_variables: &vpc_variables
+  VpcId: ${VpcId}
+  AvailabilityZones: us-west-2a,us-west-2b
+  BaseDomain: ${BaseDomain}
+  PrivateSubnets: ${PrivateSubnets}
+
+  # Common variables when using the ALB
+alb_variables: &alb_variables
+  AlbDNSName: ${output ALB::DNSName}
+  AlbCanonicalHostedZoneID: ${output ALB::CanonicalHostedZoneID}
+  IAlbListener: ${output ALB::IAlbListener}
+  AlbSg: ${output ALB::InternalAlbSG}
+
+mappings:
+  AmiMap:
+    us-west-2:
+      amazonLinux2: ami-a9d09ed1
+#      ami-31394949
 
 # The stacks key accepts a list of stack declarations.
 # http://stacker.readthedocs.io/en/latest/config.html#stacks
 stacks:
 #  - name: s3bucket-smoke-test
 #    class_path: blueprints.s3_bucket.S3Simple
+  - name: ALB
+    class_path: blueprints.alb.Alb
+    variables:
+      << : *vpc_variables # yaml parameter expansion syntax
+      ALBHostName: cumulus-alb-test
+      ALBCertName: ${ALBCertName} # INFO: This is a lookup to the .env file or -e cli param (which you won't use right!)
   - name: pipelinesimple
     class_path: blueprints.pipeline_simple.PipelineSimple
+  - name: scalinggroupsimple
+    class_path: blueprints.scaling_group_simple.ScalingGroupSimple
+    variables:
+      << : *vpc_variables # yaml parameter expansion syntax
+      ImageName: amazonLinux2
+      SshKeyName: stc-admin-March-2017-PLAYPEN
+  - name: websitesimple
+    class_path: blueprints.website_simple.WebsiteSimple
+    variables:
+      << : *vpc_variables # yaml parameter expansion syntax
+      << : *alb_variables
+      namespace: ${namespace}
+      env: ${env}
+      ImageName: amazonLinux2
+      SshKeyName: stc-admin-March-2017-PLAYPEN
+
