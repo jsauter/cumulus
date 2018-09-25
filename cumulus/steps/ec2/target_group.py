@@ -1,6 +1,5 @@
-from troposphere import elasticloadbalancingv2 as alb, route53
-from troposphere import (
-    Ref, Join, ec2)
+from troposphere import elasticloadbalancingv2 as alb
+
 from cumulus.chain import step
 from cumulus.steps.ec2 import META_TARGET_GROUP_NAME
 
@@ -39,4 +38,3 @@ class TargetGroup(step.Step):
             UnhealthyThresholdCount="3",
             VpcId=self.vpc_id
         ))
-

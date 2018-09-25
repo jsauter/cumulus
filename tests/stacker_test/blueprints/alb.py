@@ -1,13 +1,8 @@
-from awacs.aws import Allow, Principal, Policy, Statement
-from awacs.sts import AssumeRole
 from stacker.blueprints.base import Blueprint
-from stacker.blueprints.variables.types import EC2VPCId, EC2SubnetIdList, CFNCommaDelimitedList, CFNString, CFNNumber, \
-    EC2KeyPairKeyName
-from troposphere import cloudformation, ec2, iam, Ref
-from troposphere.iam import Role
+from stacker.blueprints.variables.types import EC2VPCId, EC2SubnetIdList, CFNCommaDelimitedList, CFNString, CFNNumber
+
 from cumulus.chain import chain, chaincontext
-from cumulus.steps.ec2 import scaling_group, launch_config, block_device_data, ingress_rule, target_group, dns, alb
-from cumulus.steps.ec2.instance_profile_role import InstanceProfileRole
+from cumulus.steps.ec2 import alb
 
 
 class Alb(Blueprint):
@@ -46,8 +41,6 @@ class Alb(Blueprint):
 
     def create_template(self):
 
-        instance_profile_name = "InstanceProfile" + self.name
-
         t = self.template
         t.add_description("Acceptance Tests for cumulus scaling groups")
 
@@ -55,9 +48,7 @@ class Alb(Blueprint):
 
         the_chain = chain.Chain()
 
-
-        the_chain.add(alb.Alb(
-        ))
+        the_chain.add(alb.Alb())
 
         chain_context = chaincontext.ChainContext(
             template=t,

@@ -1,5 +1,6 @@
 from troposphere import (
-    Ref, ec2, Join)
+    Ref, ec2)
+
 from cumulus.chain import step
 from cumulus.steps.ec2 import META_SECURITY_GROUP_REF
 
@@ -28,4 +29,3 @@ class AlbPort(step.Step):
             SourceSecurityGroupId=Ref(self.alb_sg_name),
             GroupId=chain_context.metadata[META_SECURITY_GROUP_REF]
         ))
-
