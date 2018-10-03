@@ -1,23 +1,19 @@
 import awacs
-import troposphere
-
 import awacs.aws
+import awacs.ec2
+import awacs.iam
 import awacs.logs
 import awacs.s3
-import awacs.iam
-import awacs.ec2
 import awacs.sts
+import troposphere
+from troposphere import iam, \
+    codebuild, codepipeline, Ref, ec2
 
 import cumulus.policies
 import cumulus.policies.codebuild
 import cumulus.types.codebuild.buildaction
 import cumulus.util.template_query
-
-from troposphere import iam,\
-    codebuild, codepipeline, Ref, ec2
-
 from cumulus.chain import step
-
 from cumulus.steps.dev_tools import META_PIPELINE_BUCKET_POLICY_REF, \
     META_PIPELINE_BUCKET_NAME
 
@@ -26,11 +22,13 @@ class CodeBuildAction(step.Step):
 
     def __init__(self,
                  action_name,
-                 input_artifact_name,
                  stage_name_to_add,
+                 input_artifact_name,
                  environment=None,
                  vpc_config=None,
-                 buildspec='buildspec.yml'):
+                 buildspec='buildspec.yml',
+                 role_arn=None,
+                 ):
         """
         :type buildspec: basestring path to buildspec.yml or text containing the buildspec.
         :type input_artifact_name: basestring The artifact name in the pipeline. Must contain a buildspec.yml
@@ -39,6 +37,7 @@ class CodeBuildAction(step.Step):
         :type vpc_config.Vpc_Config: Only required if the codebuild step requires access to the VPC
         """
         step.Step.__init__(self)
+        self.role_arn = role_arn
         self.buildspec = buildspec
         self.environment = environment
         self.input_artifact_name = input_artifact_name
@@ -48,33 +47,21 @@ class CodeBuildAction(step.Step):
 
     def handle(self, chain_context):
 
+        self.validate(chain_context)
+
         print("Adding action %s Stage." % self.action_name)
         full_action_name = "%s%s" % (self.stage_name_to_add, self.action_name)
 
         policy_name = "%sCodeBuildPolicy" % chain_context.instance_name
         role_name = "CodeBuildRole%s" % full_action_name
 
-        codebuild_role = iam.Role(
-            role_name,
-            Path="/",
-            AssumeRolePolicyDocument=awacs.aws.Policy(
-                Statement=[
-                    awacs.aws.Statement(
-                        Effect=awacs.aws.Allow,
-                        Action=[awacs.sts.AssumeRole],
-                        Principal=awacs.aws.Principal(
-                            'Service',
-                            "codebuild.amazonaws.com"
-                        )
-                    )]
-            ),
-            Policies=[
-                cumulus.policies.codebuild.get_policy_code_build_general_access(policy_name)
-            ],
-            ManagedPolicyArns=[
-                chain_context.metadata[META_PIPELINE_BUCKET_POLICY_REF]
-            ]
+        codebuild_role = self.get_default_code_build_role(
+            chain_context=chain_context,
+            policy_name=policy_name,
+            role_name=role_name,
         )
+
+        codebuild_role_arn = self.role_arn if self.role_arn else troposphere.GetAtt(codebuild_role, 'Arn')
 
         if not self.environment:
             self.environment = codebuild.Environment(
@@ -89,7 +76,7 @@ class CodeBuildAction(step.Step):
 
         project = self.create_project(
             chain_context=chain_context,
-            codebuild_role=codebuild_role,
+            codebuild_role_arn=codebuild_role_arn,
             codebuild_environment=self.environment,
             name=full_action_name,
         )
@@ -117,7 +104,31 @@ class CodeBuildAction(step.Step):
         code_build_action.RunOrder = next_run_order
         stage.Actions.append(code_build_action)
 
-    def create_project(self, chain_context, codebuild_role, codebuild_environment, name):
+    def get_default_code_build_role(self, chain_context, policy_name, role_name):
+        codebuild_role = iam.Role(
+            role_name,
+            Path="/",
+            AssumeRolePolicyDocument=awacs.aws.Policy(
+                Statement=[
+                    awacs.aws.Statement(
+                        Effect=awacs.aws.Allow,
+                        Action=[awacs.sts.AssumeRole],
+                        Principal=awacs.aws.Principal(
+                            'Service',
+                            "codebuild.amazonaws.com"
+                        )
+                    )]
+            ),
+            Policies=[
+                cumulus.policies.codebuild.get_policy_code_build_general_access(policy_name)
+            ],
+            ManagedPolicyArns=[
+                chain_context.metadata[META_PIPELINE_BUCKET_POLICY_REF]
+            ]
+        )
+        return codebuild_role
+
+    def create_project(self, chain_context, codebuild_role_arn, codebuild_environment, name):
 
         artifacts = codebuild.Artifacts(Type='CODEPIPELINE')
 
@@ -152,11 +163,10 @@ class CodeBuildAction(step.Step):
 
         project = codebuild.Project(
             project_name,
-            DependsOn=codebuild_role,
             Artifacts=artifacts,
             Environment=codebuild_environment,
             Name="%s-%s" % (chain_context.instance_name, project_name),
-            ServiceRole=troposphere.GetAtt(codebuild_role, 'Arn'),
+            ServiceRole=codebuild_role_arn,
             Source=codebuild.Source(
                 "Deploy",
                 Type='CODEPIPELINE',
@@ -166,3 +176,8 @@ class CodeBuildAction(step.Step):
         )
 
         return project
+
+    def validate(self, chain_context):
+        if META_PIPELINE_BUCKET_POLICY_REF not in chain_context.metadata:
+            raise AssertionError("Could not find expected 'META_PIPELINE_BUCKET_POLICY_REF' in metadata. "
+                                 "Maybe you added the code build step to the chain before the pipeline step?")

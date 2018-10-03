@@ -11,7 +11,7 @@ from troposphere import iam, \
 import cumulus.policies
 import cumulus.policies.codebuild
 import cumulus.types.codebuild.buildaction
-import cumulus.util.tropo
+import cumulus.util.template_query
 from cumulus.chain import step
 from cumulus.steps.dev_tools import META_PIPELINE_BUCKET_POLICY_REF
 
@@ -74,14 +74,15 @@ class LambdaAction(step.Step):
                 codepipeline.InputArtifacts(Name=self.input_artifact_name)
             ],
             Configuration={
-                'FunctionName': self.function_name
+                'FunctionName': self.function_name,
+                'UserParameters': self.user_parameters,
             },
             RunOrder="1"
         )
 
         chain_context.template.add_resource(lambda_role)
 
-        stage = cumulus.util.tropo.TemplateQuery.get_pipeline_stage_by_name(
+        stage = cumulus.util.template_query.TemplateQuery.get_pipeline_stage_by_name(
             template=chain_context.template,
             stage_name=self.stage_name_to_add,
         )

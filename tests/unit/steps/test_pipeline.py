@@ -49,7 +49,8 @@ class TestPipelineStep(unittest.TestCase):
     def test_pipeline_has_two_stages(self):
 
         sut = pipeline.Pipeline(
-            name='test', bucket_name='testbucket'
+            name='test',
+            bucket_name='testbucket',
         )
         sut.handle(self.context)
         t = self.context.template
@@ -72,7 +73,7 @@ class TestPipelineStep(unittest.TestCase):
     def test_pipeline_uses_non_default_bucket(self):
         sut = pipeline.Pipeline(
             name='test',
-            bucket_name='testbucket',
+            bucket_name='ahhjustbucket',
             create_bucket=False,
         )
         sut.handle(self.context)
@@ -107,7 +108,7 @@ class TestPipelineStep(unittest.TestCase):
 
         project = action.create_project(
             chain_context=self.context,
-            codebuild_role='dummy-role',
+            codebuild_role_arn='dummy-role',
             codebuild_environment=self.environment,
             name='test',
         )
@@ -130,7 +131,7 @@ class TestPipelineStep(unittest.TestCase):
 
         project = action.create_project(
             chain_context=self.context,
-            codebuild_role='dummy-role',
+            codebuild_role_arn='dummy-role',
             codebuild_environment=self.environment,
             name='test',
         )

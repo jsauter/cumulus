@@ -15,6 +15,7 @@ requirements = [
     'troposphere',
     'awacs',
     'termcolor',
+    'enum34',
 ]
 
 setup_requirements = ['pytest-runner', ]
@@ -28,7 +29,7 @@ test_requirements = [
     'pytest-cov',
     'coveralls',
     'awscli',
-    'mock'
+    'mock',
 ]
 
 extras = {
