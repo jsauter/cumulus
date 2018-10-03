@@ -1,6 +1,12 @@
 import troposphere  # noqa
 from troposphere import codepipeline
 
+# Python 3 hack
+try:
+  basestring  # noqa
+except NameError:
+  basestring = str  # noqa
+
 
 class TemplateQuery:
 
@@ -36,6 +42,9 @@ class TemplateQuery:
         :type template: troposphere.Template  The template to search
         :return: troposphere.codepipeline.Stages
         """
+        if not isinstance(stage_name, basestring):
+            raise ValueError("Expected to receive basestring, but got: %s " % stage_name.__class__)
+
         found_pipelines = TemplateQuery.get_resource_by_type(
             template=template,
             type_to_find=codepipeline.Pipeline)
