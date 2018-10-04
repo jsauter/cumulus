@@ -37,9 +37,7 @@ def get_policy_code_build_general_access(policy_name):
                         awacs.aws.Action("sqs", "*"),
                         awacs.aws.Action("events", "*"),
                         awacs.aws.Action("logs", "*"),
-                        awacs.ecr.GetDownloadUrlForLayer,
-                        awacs.ecr.BatchGetImage,
-                        awacs.ecr.BatchCheckLayerAvailability,
+                        awacs.aws.Action("ecr", "*"),
                         awacs.iam.PassRole,
                     ],
                     Resource=["*"]
