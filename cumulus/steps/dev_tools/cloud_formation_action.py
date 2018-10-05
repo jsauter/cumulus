@@ -11,6 +11,8 @@ from cumulus.steps.dev_tools import META_PIPELINE_BUCKET_POLICY_REF
 
 class CloudFormationAction(step.Step):
 
+    OUTPUT_FILE_NAME = 'StackOutputs.json'
+
     def __init__(self,
                  action_name,
                  input_artifact_names,
@@ -18,7 +20,8 @@ class CloudFormationAction(step.Step):
                  input_template_configuration,
                  stage_name_to_add,
                  stack_name,
-                 action_mode):
+                 action_mode,
+                 output_artifact_name=None):
         """
         :type action_name: basestring Displayed on the console
         :type input_artifact_names: [basestring] List of input artifacts
@@ -36,6 +39,7 @@ class CloudFormationAction(step.Step):
         self.stage_name_to_add = stage_name_to_add
         self.stack_name = stack_name
         self.action_mode = action_mode
+        self.output_artifact_name = output_artifact_name
 
     def handle(self, chain_context):
 
@@ -81,10 +85,20 @@ class CloudFormationAction(step.Step):
                 'StackName': self.stack_name,
                 'Capabilities': 'CAPABILITY_NAMED_IAM',
                 'TemplateConfiguration': self.input_template_configuration,
-                'TemplatePath': self.input_template_path
+                'TemplatePath': self.input_template_path,
             },
             RunOrder="1"
         )
+
+        # Add optional configuration
+        if (self.output_artifact_name):
+            output_artifact = codepipeline.OutputArtifacts(
+                Name=self.output_artifact_name
+            )
+            cloud_formation_action.OutputArtifacts = [
+                output_artifact
+            ]
+            cloud_formation_action.Configuration['OutputFileName'] = CloudFormationAction.OUTPUT_FILE_NAME
 
         chain_context.template.add_resource(cloud_formation_role)
 

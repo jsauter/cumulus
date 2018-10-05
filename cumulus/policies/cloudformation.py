@@ -36,9 +36,7 @@ def get_policy_cloudformation_general_access(policy_name):
                         awacs.aws.Action("lambda", "*"),
                         awacs.aws.Action("sqs", "*"),
                         awacs.aws.Action("events", "*"),
-                        awacs.ecr.GetDownloadUrlForLayer,
-                        awacs.ecr.BatchGetImage,
-                        awacs.ecr.BatchCheckLayerAvailability,
+                        awacs.aws.Action("ecr", "*"),
                         awacs.iam.PassRole,
                     ],
                     Resource=["*"]

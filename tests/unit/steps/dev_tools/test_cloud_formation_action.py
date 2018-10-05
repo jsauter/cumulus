@@ -74,6 +74,9 @@ class TestCloudFormationAction(unittest.TestCase):
         self.assertEqual(test_action.Configuration['ActionMode'], action_mode.ActionMode.REPLACE_ON_FAILURE.value)
         self.assertEquals(len(test_action.InputArtifacts), 1)
         self.assertEquals(test_action.InputArtifacts[0].Name, "InfraInput")
+        # By default no output artifact is created
+        self.assertFalse(hasattr(test_action, 'OutputArtifacts'))
+        self.assertFalse('OutputFileName' in test_action.Configuration)
 
     def test_raises_error_if_target_stage_does_not_exist(self):
         action = cloud_formation_action.CloudFormationAction(
@@ -113,3 +116,25 @@ class TestCloudFormationAction(unittest.TestCase):
         self.assertEquals(len(test_action.InputArtifacts), 2)
         self.assertEquals(test_action.InputArtifacts[0].Name, "InfraInput")
         self.assertEquals(test_action.InputArtifacts[1].Name, "ParameterInput")
+
+    def test_can_create_output_artifact(self):
+        action = cloud_formation_action.CloudFormationAction(
+            action_name="CloudFormation",
+            input_artifact_names=["InfraInput"],
+            input_template_path="InfraInput::template.json",
+            input_template_configuration="InfraInput::myenv.json",
+            output_artifact_name="AllOfTheThings",
+            stage_name_to_add=self.deploy_stage_name,
+            stack_name="my-microservice",
+            action_mode=action_mode.ActionMode.REPLACE_ON_FAILURE
+        )
+
+        action.handle(self.context)
+
+        deploy_stage = TemplateQuery.get_resource_by_type(self.context.template, codepipeline.Stages)[0]
+        self.assertEqual(len(deploy_stage.Actions), 1)
+
+        test_action = deploy_stage.Actions[0]
+        self.assertEquals(len(test_action.OutputArtifacts), 1)
+        self.assertEquals(test_action.OutputArtifacts[0].Name, "AllOfTheThings")
+        self.assertEquals(test_action.Configuration['OutputFileName'], "StackOutputs.json")
