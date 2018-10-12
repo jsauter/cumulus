@@ -49,10 +49,10 @@ class CodeBuildAction(step.Step):
     def handle(self, chain_context):
 
         print("Adding action %s Stage." % self.action_name)
-        suffix = "%s%s" % (self.stage_name_to_add, self.action_name)
+        full_action_name = "%s%s" % (self.stage_name_to_add, self.action_name)
 
-        policy_name = "CodeBuildPolicy%s" % chain_context.instance_name
-        role_name = "CodeBuildRole%s" % suffix
+        policy_name = "%sCodeBuildPolicy" % chain_context.instance_name
+        role_name = "CodeBuildRole%s" % full_action_name
 
         codebuild_role = iam.Role(
             role_name,
@@ -91,7 +91,7 @@ class CodeBuildAction(step.Step):
             chain_context=chain_context,
             codebuild_role=codebuild_role,
             codebuild_environment=self.environment,
-            name=self.action_name + suffix,
+            name=full_action_name,
         )
 
         code_build_action = cumulus.types.codebuild.buildaction.CodeBuildAction(
@@ -145,7 +145,7 @@ class CodeBuildAction(step.Step):
                     SecurityGroupIds=[Ref(sg)],
                 )}
 
-        project_name = "project%s" % name
+        project_name = "Project%s" % name
 
         print("Action %s is using buildspec: " % self.action_name)
         print(self.buildspec)
@@ -155,7 +155,7 @@ class CodeBuildAction(step.Step):
             DependsOn=codebuild_role,
             Artifacts=artifacts,
             Environment=codebuild_environment,
-            Name=project_name,
+            Name="%s-%s" % (chain_context.instance_name, project_name),
             ServiceRole=troposphere.GetAtt(codebuild_role, 'Arn'),
             Source=codebuild.Source(
                 "Deploy",
