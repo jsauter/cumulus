@@ -52,7 +52,7 @@ class Pipeline(step.Step):
         """
         # TODO: let (force?) bucket to be injected.
         pipeline_bucket = Bucket(
-            "pipelinebucket%s" % chain_context.instance_name,
+            "PipelineBucket%s" % self.name,
             BucketName=self.bucket_name,
             VersioningConfiguration=VersioningConfiguration(
                 Status="Enabled"
