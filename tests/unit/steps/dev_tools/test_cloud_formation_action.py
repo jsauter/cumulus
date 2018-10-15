@@ -1,3 +1,5 @@
+from cumulus.util.template_query import TemplateQuery
+
 try:
     # python 3
     from unittest.mock import patch # noqa
@@ -9,12 +11,11 @@ except:  # noqa
 import unittest
 
 import troposphere
-from troposphere import codepipeline
+from troposphere import codepipeline  # noqa
 
 from cumulus.chain import chaincontext
 from cumulus.steps.dev_tools import cloud_formation_action, META_PIPELINE_BUCKET_POLICY_REF
 from cumulus.types.cloudformation import action_mode
-from cumulus.util.template_query import TemplateQuery
 
 
 class TestCloudFormationAction(unittest.TestCase):
@@ -57,7 +58,9 @@ class TestCloudFormationAction(unittest.TestCase):
             input_template_configuration="InfraInput::myenv.json",
             stage_name_to_add=self.deploy_stage_name,
             stack_name="my-microservice",
-            action_mode=action_mode.ActionMode.REPLACE_ON_FAILURE
+            action_mode=action_mode.ActionMode.REPLACE_ON_FAILURE,
+            # cfn_action_config_role_arn=troposphere.NoValue,
+            # cfn_action_role_arn=troposphere.NoValue
         )
 
         action.handle(self.context)
@@ -138,3 +141,94 @@ class TestCloudFormationAction(unittest.TestCase):
         self.assertEquals(len(test_action.OutputArtifacts), 1)
         self.assertEquals(test_action.OutputArtifacts[0].Name, "AllOfTheThings")
         self.assertEquals(test_action.Configuration['OutputFileName'], "StackOutputs.json")
+
+    def test_sets_role_arn_to_cfn_action(self):
+        expected_arn = "im_an_arn"
+        action = cloud_formation_action.CloudFormationAction(
+            action_name="CloudFormation",
+            input_artifact_names=["InfraInput"],
+            input_template_path="InfraInput::template.json",
+            input_template_configuration="InfraInput::myenv.json",
+            output_artifact_name="AllOfTheThings",
+            stage_name_to_add=self.deploy_stage_name,
+            stack_name="my-microservice",
+            action_mode=action_mode.ActionMode.REPLACE_ON_FAILURE,
+            cfn_action_role_arn=expected_arn
+        )
+
+        action.handle(self.context)
+
+        deploy_stage = TemplateQuery.get_resource_by_type(self.context.template, codepipeline.Stages)[0]
+        self.assertEqual(len(deploy_stage.Actions), 1)
+
+        test_action = deploy_stage.Actions[0]
+        self.assertEquals(test_action.RoleArn, expected_arn)
+        self.assertTrue(hasattr(test_action, 'RoleArn'))
+
+    def test_does_not_set_role_arn_to_cfn_action(self):
+        action = cloud_formation_action.CloudFormationAction(
+            action_name="CloudFormation",
+            input_artifact_names=["InfraInput"],
+            input_template_path="InfraInput::template.json",
+            input_template_configuration="InfraInput::myenv.json",
+            output_artifact_name="AllOfTheThings",
+            stage_name_to_add=self.deploy_stage_name,
+            stack_name="my-microservice",
+            action_mode=action_mode.ActionMode.REPLACE_ON_FAILURE,
+        )
+
+        action.handle(self.context)
+
+        deploy_stage = TemplateQuery.get_resource_by_type(self.context.template, codepipeline.Stages)[0]
+        self.assertEqual(len(deploy_stage.Actions), 1)
+
+        test_action = deploy_stage.Actions[0]
+        self.assertFalse(hasattr(test_action, 'RoleArn'))
+
+    def test_sets_config_role_arn_to_cfn_action_configuration(self):
+        expected_arn = 'im_another_arn'
+        action = cloud_formation_action.CloudFormationAction(
+            action_name="CloudFormation",
+            input_artifact_names=["InfraInput"],
+            input_template_path="InfraInput::template.json",
+            input_template_configuration="InfraInput::myenv.json",
+            output_artifact_name="AllOfTheThings",
+            stage_name_to_add=self.deploy_stage_name,
+            stack_name="my-microservice",
+            action_mode=action_mode.ActionMode.REPLACE_ON_FAILURE,
+            cfn_action_config_role_arn=expected_arn,
+        )
+
+        action.handle(self.context)
+
+        deploy_stage = TemplateQuery.get_resource_by_type(self.context.template, codepipeline.Stages)[0]
+        self.assertEqual(len(deploy_stage.Actions), 1)
+
+        test_action = deploy_stage.Actions[0]
+        self.assertTrue("RoleArn" in test_action.Configuration)
+        self.assertEqual(test_action.Configuration['RoleArn'], expected_arn)
+        self.assertFalse(hasattr(test_action, 'RoleArn'))
+
+    def test_uses_default_config_role_arn_to_cfn_action_configuration(self):
+        unexpected_arn = 'im_another_arn'
+        action = cloud_formation_action.CloudFormationAction(
+            action_name="CloudFormation",
+            input_artifact_names=["InfraInput"],
+            input_template_path="InfraInput::template.json",
+            input_template_configuration="InfraInput::myenv.json",
+            output_artifact_name="AllOfTheThings",
+            stage_name_to_add=self.deploy_stage_name,
+            stack_name="my-microservice",
+            action_mode=action_mode.ActionMode.REPLACE_ON_FAILURE,
+        )
+
+        action.handle(self.context)
+
+        deploy_stage = TemplateQuery.get_resource_by_type(self.context.template, codepipeline.Stages)[0]
+        self.assertEqual(len(deploy_stage.Actions), 1)
+
+        test_action = deploy_stage.Actions[0]
+        self.assertTrue("RoleArn" in test_action.Configuration)
+        self.assertNotEqual(test_action.Configuration['RoleArn'], unexpected_arn)
+        self.assertFalse(hasattr(test_action, 'RoleArn'))
+        self.assertTrue(test_action.Configuration['RoleArn'].__class__ is troposphere.GetAtt)
