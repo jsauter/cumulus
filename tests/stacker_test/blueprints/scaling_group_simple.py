@@ -85,12 +85,7 @@ class ScalingGroupSimple(Blueprint):
                 ),
             )))
 
-        launchConfigName = 'lc' + self.name
-
-        the_chain.add(launch_config.LaunchConfig(asg_name=self.name,
-                                                 launch_config_name=launchConfigName,
-                                                 meta_data=self.get_metadata(),
-                                                 instance_profile_name=instance_profile_name), )
+        the_chain.add(launch_config.LaunchConfig(meta_data=self.get_metadata()))
 
         the_chain.add(block_device_data.BlockDeviceData(ec2.BlockDeviceMapping(
             DeviceName="/dev/xvda",
@@ -98,9 +93,7 @@ class ScalingGroupSimple(Blueprint):
                 VolumeSize="40"
             ))))
 
-        the_chain.add(scaling_group.ScalingGroup(
-            launch_config_name=launchConfigName,
-        ))
+        the_chain.add(scaling_group.ScalingGroup())
 
         chain_context = chaincontext.ChainContext(
             template=t,
