@@ -19,7 +19,7 @@ from troposphere import iam,\
 from cumulus.chain import step
 
 from cumulus.steps.dev_tools import META_PIPELINE_BUCKET_POLICY_REF, \
-    META_PIPELINE_BUCKET_REF
+    META_PIPELINE_BUCKET_NAME
 
 
 class CodeBuildAction(step.Step):
@@ -83,7 +83,7 @@ class CodeBuildAction(step.Step):
                 Type='LINUX_CONTAINER',
                 EnvironmentVariables=[
                     # TODO: allow these to be injectable, or just the whole environment?
-                    {'Name': 'PIPELINE_BUCKET', 'Value': chain_context.metadata[META_PIPELINE_BUCKET_REF]}
+                    {'Name': 'PIPELINE_BUCKET', 'Value': chain_context.metadata[META_PIPELINE_BUCKET_NAME]}
                 ],
             )
 

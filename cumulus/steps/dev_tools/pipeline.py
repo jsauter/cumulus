@@ -23,20 +23,23 @@ class Pipeline(step.Step):
     def __init__(self,
                  name,
                  bucket_name,
+                 create_bucket=True,
                  pipeline_policies=None,
                  bucket_policy_statements=None,
                  bucket_kms_key_arn=None,
                  ):
         """
 
-        :type bucket_policy_statements: [awacs.aws.Statement]
-        :type bucket: troposphere.s3.Bucket
-        :type pipeline_policies: [troposphere.iam.Policy]
+        :type create_bucket: bool if False, will not create the bucket. Will attach policies either way.
         :type bucket_name: the name of the bucket that will be created suffixed with the chaincontext instance name
+        :type bucket_policy_statements: [awacs.aws.Statement]
+        :type pipeline_policies: [troposphere.iam.Policy]
+        :type bucket_kms_key_arn: ARN used to decrypt the pipeline artifacts
         """
         step.Step.__init__(self)
         self.name = name
         self.bucket_name = bucket_name
+        self.create_bucket = create_bucket
         self.bucket_policy_statements = bucket_policy_statements
         self.pipeline_policies = pipeline_policies or []
         self.bucket_kms_key_arn = bucket_kms_key_arn
@@ -50,20 +53,22 @@ class Pipeline(step.Step):
         :param chain_context:
         :return:
         """
-        # TODO: let (force?) bucket to be injected.
-        pipeline_bucket = Bucket(
-            "PipelineBucket%s" % self.name,
-            BucketName=self.bucket_name,
-            VersioningConfiguration=VersioningConfiguration(
-                Status="Enabled"
-            )
-        )
 
-        default_bucket_policies = self.get_default_bucket_policy_statements(pipeline_bucket)
+        if self.create_bucket:
+            pipeline_bucket = Bucket(
+                "PipelineBucket%s" % chain_context.instance_name,
+                BucketName=self.bucket_name,
+                VersioningConfiguration=VersioningConfiguration(
+                    Status="Enabled"
+                )
+            )
+            chain_context.template.add_resource(pipeline_bucket)
+
+        default_bucket_policies = self.get_default_bucket_policy_statements(self.bucket_name)
 
         if self.bucket_policy_statements:
             bucket_access_policy = self.get_bucket_policy(
-                pipeline_bucket=pipeline_bucket,
+                pipeline_bucket=self.bucket_name,
                 bucket_policy_statements=self.bucket_policy_statements,
             )
             chain_context.template.add_resource(bucket_access_policy)
@@ -78,9 +83,7 @@ class Pipeline(step.Step):
             )
         )
 
-        chain_context.template.add_resource(pipeline_bucket_access_policy)
-        # pipeline_bucket could be a string or Join object.. unit test this.
-        chain_context.metadata[cumulus.steps.dev_tools.META_PIPELINE_BUCKET_REF] = Ref(pipeline_bucket)
+        chain_context.metadata[cumulus.steps.dev_tools.META_PIPELINE_BUCKET_NAME] = self.bucket_name
         chain_context.metadata[cumulus.steps.dev_tools.META_PIPELINE_BUCKET_POLICY_REF] = Ref(
             pipeline_bucket_access_policy)
 
@@ -98,12 +101,12 @@ class Pipeline(step.Step):
                         Resource=[
                             troposphere.Join('', [
                                 awacs.s3.ARN(),
-                                Ref(pipeline_bucket),
+                                self.bucket_name,
                                 "/*"
                             ]),
                             troposphere.Join('', [
                                 awacs.s3.ARN(),
-                                Ref(pipeline_bucket),
+                                self.bucket_name,
                             ]),
                         ],
                     ),
@@ -173,7 +176,7 @@ class Pipeline(step.Step):
             Stages=[],
             ArtifactStore=codepipeline.ArtifactStore(
                 Type="S3",
-                Location=Ref(pipeline_bucket),
+                Location=self.bucket_name,
             )
             # TODO: optionally add kms key here
         )
@@ -191,11 +194,17 @@ class Pipeline(step.Step):
             Description="Code Pipeline",
             Value=Ref(generic_pipeline),
         )
+        pipeline_bucket_output = troposphere.Output(
+            "PipelineBucket",
+            Description="Name of the input artifact bucket for the pipeline",
+            Value=self.bucket_name,
+        )
 
-        chain_context.template.add_resource(pipeline_bucket)
+        chain_context.template.add_resource(pipeline_bucket_access_policy)
         chain_context.template.add_resource(pipeline_service_role)
         chain_context.template.add_resource(generic_pipeline)
         chain_context.template.add_output(pipeline_output)
+        chain_context.template.add_output(pipeline_bucket_output)
 
     def get_default_bucket_policy_statements(self, pipeline_bucket):
         bucket_policy_statements = [
@@ -208,7 +217,7 @@ class Pipeline(step.Step):
                 Resource=[
                     troposphere.Join('', [
                         awacs.s3.ARN(),
-                        Ref(pipeline_bucket),
+                        pipeline_bucket,
                     ]),
                 ],
             ),
@@ -236,7 +245,7 @@ class Pipeline(step.Step):
                 Resource=[
                     troposphere.Join('', [
                         awacs.s3.ARN(),
-                        Ref(pipeline_bucket),
+                        pipeline_bucket,
                         '/*'
                     ]),
                 ],
@@ -248,7 +257,7 @@ class Pipeline(step.Step):
     def get_bucket_policy(self, pipeline_bucket, bucket_policy_statements):
         policy = troposphere.s3.BucketPolicy(
             "PipelineBucketPolicy",
-            Bucket=troposphere.Ref(pipeline_bucket),
+            Bucket=pipeline_bucket,
             PolicyDocument=awacs.aws.Policy(
                 Statement=bucket_policy_statements,
             ),

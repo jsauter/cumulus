@@ -8,7 +8,7 @@
 import unittest
 
 import troposphere
-from troposphere import codepipeline, codebuild
+from troposphere import codepipeline, codebuild, s3
 
 from cumulus.chain import chaincontext
 from cumulus.steps.dev_tools import pipeline, code_build_action
@@ -56,6 +56,31 @@ class TestPipelineStep(unittest.TestCase):
 
         pipelines = TemplateQuery.get_resource_by_type(t, codepipeline.Pipeline)
         self.assertTrue(len(pipelines), 1)
+
+    def test_pipeline_creates_default_bucket(self):
+
+        sut = pipeline.Pipeline(
+            name='test',
+            bucket_name='testbucket',
+        )
+        sut.handle(self.context)
+        t = self.context.template
+
+        the_bucket = TemplateQuery.get_resource_by_type(t, s3.Bucket)
+        self.assertTrue(len(the_bucket), 1)
+
+    def test_pipeline_uses_non_default_bucket(self):
+        sut = pipeline.Pipeline(
+            name='test',
+            bucket_name='testbucket',
+            create_bucket=False,
+        )
+        sut.handle(self.context)
+        t = self.context.template
+
+        the_bucket = TemplateQuery.get_resource_by_type(t, s3.Bucket)
+        self.assertEqual(len(the_bucket), 0)
+
     #
     # def test_codebuild_should_add_stage(self):
     #

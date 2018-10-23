@@ -1,29 +1,29 @@
 #!/usr/bin/env bash
 
+#set -x
 ACCOUNT_ID=`aws sts get-caller-identity | jq .Account | tr -d '"' `
 NAMESPACE=acc # must match the namespace in the conf file
-BUCKET="cumulus-${NAMESPACE}-${ACCOUNT_ID}-automatedtests"
 
 echo "Using account: ${ACCOUNT_ID}"
-echo "Using bucket: ${BUCKET}"
 
 set -e #Important. Script will exit appropriately if there is an error.
 
-stacker build conf/acceptance.env stacker.yaml --recreate-failed -t
+stacker build conf/acceptance.env stacker.yaml --recreate-failed -t --stacks pipelinesimple
 
-ARTIFACT_NAME='artifact.tar.gz'
+BUCKET_NAME=$(stacker info conf/acceptance.env stacker.yaml 2>&1 | grep PipelineBucket: | cut -f 3 -d " ")
+PIPELINE_NAME=$(stacker info conf/acceptance.env stacker.yaml 2>&1 | grep PipelineName | cut -f 3 -d " ")
+
+ARTIFACT_NAME='artifact.zip'
 TEMP_DIR='ac_build'
 
 pushd ../../ # move to main folder
 mkdir -p ${TEMP_DIR}
-zip -r ${TEMP_DIR}/${ARTIFACT_NAME} ./ -x *.git* *./${TEMP_DIR}* *.eggs* *.idea* *.tox*
+zip -r ${TEMP_DIR}/${ARTIFACT_NAME} ./ -x *.git* *./${TEMP_DIR}* *.eggs* *.egg-* *.idea* *.tox* *tests* *docs*
 
-aws s3 cp ./${TEMP_DIR}/${ARTIFACT_NAME} s3://${BUCKET}/${ARTIFACT_NAME}
+aws s3 cp ./${TEMP_DIR}/${ARTIFACT_NAME} s3://${BUCKET_NAME}/${ARTIFACT_NAME}
 
 rm -rf ${TEMP_DIR}
 popd # return to test folder
-
-PIPELINE_NAME=$(stacker info conf/acceptance.env stacker.yaml 2>&1 | grep PipelineLogicalName | cut -f 3 -d " ")
 
 echo "Pipeline deployment started for pipeline: ${PIPELINE_NAME}"
 
@@ -60,8 +60,8 @@ done
 
 SHOULD_DESTROY=false
 if $SHOULD_DESTROY; then
-    aws s3 rm s3://${BUCKET} --recursive
-    python delete_bucket_versions.py ${BUCKET}
+    aws s3 rm s3://${BUCKET_NAME} --recursive
+    python delete_bucket_versions.py ${BUCKET_NAME}
 
     stacker destroy conf/acceptance.env stacker.yaml --force -t
 fi
