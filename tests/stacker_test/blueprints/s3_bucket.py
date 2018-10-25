@@ -13,6 +13,6 @@ class S3Simple(Blueprint):
         t = self.template
 
         t.add_resource(Bucket(
-           "S3Bucket",
-           BucketName='bswift-int-test-asdf'
+            "S3Bucket",
+            BucketName='bswift-int-test-asdf'
         ))

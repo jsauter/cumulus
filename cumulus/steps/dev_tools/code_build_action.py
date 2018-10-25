@@ -140,10 +140,10 @@ class CodeBuildAction(step.Step):
             )
             chain_context.template.add_resource(sg)
             vpc_config = {'VpcConfig': codebuild.VpcConfig(
-                    VpcId=self.vpc_config.vpc_id,
-                    Subnets=self.vpc_config.subnets,
-                    SecurityGroupIds=[Ref(sg)],
-                )}
+                VpcId=self.vpc_config.vpc_id,
+                Subnets=self.vpc_config.subnets,
+                SecurityGroupIds=[Ref(sg)],
+            )}
 
         project_name = "Project%s" % name
 
