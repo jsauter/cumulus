@@ -9,11 +9,11 @@ class SourceS3Action(troposphere.codepipeline.Actions):
         super(SourceS3Action, self).__init__(**kwargs)
 
         self.ActionTypeId = troposphere.codepipeline.ActionTypeId(
-                Category="Source",
-                Owner="AWS",
-                Version="1",
-                Provider='S3',
-            )
+            Category="Source",
+            Owner="AWS",
+            Version="1",
+            Provider='S3',
+        )
         self.RunOrder = "1"
 
 
@@ -25,11 +25,11 @@ class SourceCodeCommitAction(troposphere.codepipeline.Actions):
         super(SourceCodeCommitAction, self).__init__(**kwargs)
 
         self.ActionTypeId = troposphere.codepipeline.ActionTypeId(
-                Category="Source",
-                Owner="AWS",
-                Version="1",
-                Provider="CodeCommit",
-            )
+            Category="Source",
+            Owner="AWS",
+            Version="1",
+            Provider="CodeCommit",
+        )
         self.RunOrder = "1"
 
 
@@ -41,11 +41,11 @@ class CodeBuildAction(troposphere.codepipeline.Actions):
         super(CodeBuildAction, self).__init__(**kwargs)
 
         self.ActionTypeId = troposphere.codepipeline.ActionTypeId(
-                Category="Build",
-                Owner="AWS",
-                Version="1",
-                Provider="CodeBuild"
-            )
+            Category="Build",
+            Owner="AWS",
+            Version="1",
+            Provider="CodeBuild"
+        )
         self.RunOrder = "1"
 
 
@@ -57,11 +57,11 @@ class LambdaAction(troposphere.codepipeline.Actions):
         super(LambdaAction, self).__init__(**kwargs)
 
         self.ActionTypeId = troposphere.codepipeline.ActionTypeId(
-                Category="Invoke",
-                Owner="AWS",
-                Version="1",
-                Provider='Lambda',
-            )
+            Category="Invoke",
+            Owner="AWS",
+            Version="1",
+            Provider='Lambda',
+        )
         self.RunOrder = "1"
 
 

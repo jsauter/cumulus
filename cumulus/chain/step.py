@@ -11,4 +11,4 @@ class Step:
 
     def handle(self, chain_context):
         # type: (chaincontext.ChainContext) -> None
-        raise NotImplemented("handle must be implemented")
+        raise NotImplementedError("handle must be implemented")
