@@ -1,4 +1,5 @@
 import troposphere
+from cumulus.steps.storage.s3bucket import S3Bucket
 from stacker.blueprints.base import Blueprint
 import troposphere.codebuild
 
@@ -17,7 +18,6 @@ class PipelineSimple(Blueprint):
     }
 
     def create_template(self):
-
         t = self.template
         t.add_description("Acceptance Tests for cumulus pipelines")
 
@@ -34,10 +34,24 @@ class PipelineSimple(Blueprint):
             "automatedtests"
         ])
 
-        the_chain.add(pipeline.Pipeline(
+        bucket = S3Bucket(
+            logical_name="PipelineBucket",
+            bucket_name=pipeline_bucket_name,
+        )
+        # expected
+        # cumulus-acc-964705782699-automatedtests
+        # actual
+        # acc-964705782699-automatedtests
+
+        the_chain.add(bucket)
+
+        the_pipeline = pipeline.Pipeline(
             name=self.name,
             bucket_name=pipeline_bucket_name,
-        ))
+            create_bucket=False,
+        )
+
+        the_chain.add(the_pipeline)
 
         source_stage_name = "SourceStage"
         deploy_stage_name = "DeployStage"
@@ -52,7 +66,7 @@ class PipelineSimple(Blueprint):
                 action_name="MicroserviceSource",
                 output_artifact_name=service_artifact,
                 s3_bucket_name=pipeline_bucket_name,
-                s3_object_key="artifact.tar.gz"
+                s3_object_key="artifact.zip"
             )
         )
 
