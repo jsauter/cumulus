@@ -1,14 +1,11 @@
-from awacs.aws import Allow, Principal, Policy, Statement
-from awacs.sts import AssumeRole
 from stacker.blueprints.base import Blueprint
 from stacker.blueprints.variables.types import EC2SubnetIdList, CFNCommaDelimitedList, CFNString, CFNNumber, \
     EC2KeyPairKeyName
-from troposphere import cloudformation, ec2, iam, Ref
+from troposphere import cloudformation, ec2, Ref
 
 from cumulus.chain import chain, chaincontext
 from cumulus.steps.ec2 import scaling_group, launch_config, block_device_data, ingress_rule, target_group, dns, \
     alb_port, listener_rule
-from cumulus.steps.ec2.instance_profile_role import InstanceProfileRole
 
 
 class WebsiteSimple(Blueprint):
@@ -92,21 +89,6 @@ class WebsiteSimple(Blueprint):
         application_port = "8000"
 
         instance_profile_name = "InstanceProfile" + self.name
-
-        the_chain.add(InstanceProfileRole(
-            instance_profile_name=instance_profile_name,
-            role=iam.Role(
-                "SomeRoleName1",
-                AssumeRolePolicyDocument=Policy(
-                    Statement=[
-                        Statement(
-                            Effect=Allow,
-                            Action=[AssumeRole],
-                            Principal=Principal("Service", ["ec2.amazonaws.com", "s3.amazonaws.com"])
-                        )
-                    ]
-                ),
-            )))
 
         the_chain.add(launch_config.LaunchConfig(meta_data=self.get_metadata(),
                                                  vpc_id=Ref("VpcId")))

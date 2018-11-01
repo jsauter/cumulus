@@ -1,13 +1,11 @@
-from awacs.aws import Allow, Principal, Policy, Statement
-from awacs.sts import AssumeRole
 from stacker.blueprints.base import Blueprint
 from stacker.blueprints.variables.types import EC2VPCId, EC2SubnetIdList, CFNCommaDelimitedList, CFNString, CFNNumber, \
     EC2KeyPairKeyName
-from troposphere import cloudformation, ec2, iam
+from troposphere import cloudformation, ec2, Ref
 
 from cumulus.chain import chain, chaincontext
+from cumulus.components.userdata.linux import LinuxUserData
 from cumulus.steps.ec2 import scaling_group, launch_config, block_device_data, ingress_rule
-from cumulus.steps.ec2.instance_profile_role import InstanceProfileRole
 
 
 class ScalingGroupSimple(Blueprint):
@@ -45,7 +43,7 @@ class ScalingGroupSimple(Blueprint):
                 install_and_run=cloudformation.InitConfig(
                     commands={
                         '01-startup': {
-                            'command': 'echo hello world'
+                            'command': 'touch thisfilemeansiworked'
                         },
                     }
                 )
@@ -57,35 +55,33 @@ class ScalingGroupSimple(Blueprint):
         t = self.template
         t.add_description("Acceptance Tests for cumulus scaling groups")
 
-        # TODO fix
-        # instance = self.name + self.context.environment['env']
-        instance = "someinstance"
+        instance_name = self.context.namespace + "testLinuxInstance"
+
         # TODO: give to builder
         the_chain = chain.Chain()
 
+        launch_config_name = 'Lc%s' % instance_name
+        asg_name = 'Asc%s' % instance_name
+        ec2_role_name = 'Ec2RoleName%s' % instance_name
+
+        the_chain.add(launch_config.LaunchConfig(launch_config_name=launch_config_name,
+                                                 asg_name=asg_name,
+                                                 ec2_role_name=ec2_role_name,
+                                                 vpc_id=Ref('VpcId'),
+                                                 bucket_name=self.context.bucket_name,
+                                                 meta_data=self.get_metadata(),
+                                                 user_data=LinuxUserData.user_data_for_cfn_init(
+                                                     launch_config_name=launch_config_name,
+                                                     asg_name=asg_name,
+                                                     configsets='default')
+                                                 )
+                      )
+
         the_chain.add(ingress_rule.IngressRule(
             port_to_open="22",
-            cidr="10.0.0.0/8"
+            name="JonTestLinuxSshPort22",
+            cidr='10.0.0.0/8'
         ))
-
-        instance_profile_name = "InstanceProfile" + self.name
-
-        the_chain.add(InstanceProfileRole(
-            instance_profile_name=instance_profile_name,
-            role=iam.Role(
-                "SomeRoleName1",
-                AssumeRolePolicyDocument=Policy(
-                    Statement=[
-                        Statement(
-                            Effect=Allow,
-                            Action=[AssumeRole],
-                            Principal=Principal("Service", ["ec2.amazonaws.com", "s3.amazonaws.com"])
-                        )
-                    ]
-                ),
-            )))
-
-        the_chain.add(launch_config.LaunchConfig(meta_data=self.get_metadata()))
 
         the_chain.add(block_device_data.BlockDeviceData(ec2.BlockDeviceMapping(
             DeviceName="/dev/xvda",
@@ -93,11 +89,12 @@ class ScalingGroupSimple(Blueprint):
                 VolumeSize="40"
             ))))
 
-        the_chain.add(scaling_group.ScalingGroup())
+        the_chain.add(scaling_group.ScalingGroup(name=asg_name,
+                                                 launch_config_name=launch_config_name))
 
         chain_context = chaincontext.ChainContext(
             template=t,
-            instance_name=instance
+            instance_name=instance_name
         )
 
         the_chain.run(chain_context)

@@ -1,5 +1,3 @@
-import re
-
 from troposphere import (
     ec2)
 
@@ -11,20 +9,19 @@ class IngressRule(step.Step):
 
     def __init__(self,
                  port_to_open,
+                 name,
                  cidr):
 
         step.Step.__init__(self)
 
         self.port_to_open = port_to_open
         self.cidr = cidr
+        self.name = name
 
     def handle(self, chain_context):
         template = chain_context.template
-
-        clean_cidr = re.compile('[\W_]+').sub('', self.cidr)
-
         template.add_resource(ec2.SecurityGroupIngress(
-            "Cidr%sToASGPort%s" % (clean_cidr, self.port_to_open),
+            self.name,
             IpProtocol="tcp",
             FromPort=self.port_to_open,
             ToPort=self.port_to_open,
