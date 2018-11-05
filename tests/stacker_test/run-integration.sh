@@ -34,6 +34,8 @@ set +e # turn off error mode, ie don't exit with a failure, let the loop continu
 end=$((SECONDS+600))
 pipeline_result=1
 while [ $SECONDS -lt ${end} ]; do
+#    uncomment to nuke without waiting. Do not check in the break uncommented.
+#    break;
     sleep 15
     # Get status from each stage in the pipeline
     pipeline_state=$(aws codepipeline get-pipeline-state --name ${PIPELINE_NAME} | jq -r '.stageStates[] | "\(.stageName) \(.latestExecution.status)"')

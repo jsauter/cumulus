@@ -31,6 +31,7 @@ def get_policy_code_build_general_access(policy_name):
                         awacs.aws.Action("apigateway", "*"),
                         awacs.aws.Action("cloudwatch", "*"),
                         awacs.aws.Action("cloudfront", "*"),
+                        awacs.aws.Action("codepipeline", "*"),
                         awacs.aws.Action("rds", "*"),
                         awacs.aws.Action("dynamodb", "*"),
                         awacs.aws.Action("lambda", "*"),

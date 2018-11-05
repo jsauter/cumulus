@@ -25,6 +25,7 @@ class CloudFormationAction(step.Step):
                  output_artifact_name=None,
                  cfn_action_role_arn=None,
                  cfn_action_config_role_arn=None,
+                 cfn_param_overrides=None,
                  ):
         """
         :type cfn_action_config_role_arn: [troposphere.iam.Policy]
@@ -37,6 +38,7 @@ class CloudFormationAction(step.Step):
         :type action_mode: cumulus.types.cloudformation.action_mode.ActionMode The actual CloudFormation action to execute
         """
         step.Step.__init__(self)
+        self.cfn_param_overrides = cfn_param_overrides
         self.action_name = action_name
         self.input_artifact_names = input_artifact_names
         self.input_template_path = input_template_path
@@ -94,6 +96,9 @@ class CloudFormationAction(step.Step):
 
         if self.cfn_action_role_arn:
             cloud_formation_action.RoleArn = self.cfn_action_role_arn
+
+        if self.cfn_param_overrides:
+            cloud_formation_action.Configuration['ParameterOverrides'] = self.cfn_param_overrides
 
         stage = cumulus.util.template_query.TemplateQuery.get_pipeline_stage_by_name(
             template=chain_context.template,
