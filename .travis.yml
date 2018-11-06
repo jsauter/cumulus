@@ -20,3 +20,4 @@ deploy:
     tags: true
     repo: brettswift/cumulus
     python: 3.6
+    branch: master
