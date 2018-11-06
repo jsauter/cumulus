@@ -88,8 +88,33 @@ A reminder for the maintainers on how to deploy.
 Make sure all your changes are committed (including an entry in HISTORY.rst).
 Then run::
 
-$ bumpversion patch # possible: major / minor / patch
-$ git push
-$ git push --tags
+$ git checkout -b release/<version>
+$ pip install -r requirements_dev.txt # to get bump2version, or just install it directly
+$ bump2version patch # possible: major / minor / patch
+$ git push <brettswift remote name> release/<version>
+$ git push <brettswift remote name> --tags
 
 Travis will then deploy to PyPI if tests pass.
+
+Changelog - release it too! 
+
+Once released (or at least when the release commit is on origin/master), generate and push the changelog.
+
+Use this tool: https://github.com/github-changelog-generator/github-changelog-generator
+
+You will need a personal access token to github for this: https://github.com/settings/tokens
+
+Note: the documented docker file is broken, but someone has a fix for it here: 
+ `docker run -it --rm -v "$(pwd)":/project markmandel/github-changelog-generator -u brettswift -p cumulus -t <your_token_here>`
+
+The original docker command once fixed, should be used and the temporary one above deleted from this file. 
+
+` docker run -it --rm -v "$(pwd)":/usr/local/src/your-app ferrarimarco/github-changelog-generator`
+
+Steps: 
+
+1. wait for new tag/version to be on master
+2. run the docker command above
+3. commit and push the changelog in via a Pull Request.
+
+ 
